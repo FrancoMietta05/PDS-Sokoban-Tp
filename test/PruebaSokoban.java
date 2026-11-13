@@ -1,0 +1,170 @@
+import java.util.ArrayList;
+import java.util.List;
+
+import sokoban.controlador.Juego;
+import sokoban.eventos.EventoJuego;
+import sokoban.eventos.GestorEventos;
+import sokoban.eventos.Observador;
+import sokoban.eventos.TipoEvento;
+import sokoban.logros.GestorLogros;
+import sokoban.logros.Logro;
+import sokoban.modelo.Direccion;
+import sokoban.modelo.TipoPowerUp;
+import sokoban.powerups.GestorPowerUps;
+
+/** Prueba de humo sin interfaz grafica. */
+public class PruebaSokoban {
+
+    static int fallas = 0;
+
+    static void check(String que, boolean ok) {
+        System.out.println((ok ? "  OK   " : "  FALLA") + "  " + que);
+        if (!ok) fallas++;
+    }
+
+    static void mover(Juego j, String secuencia) {
+        for (char c : secuencia.toCharArray()) {
+            Direccion d = switch (c) {
+                case 'U' -> Direccion.ARRIBA;
+                case 'D' -> Direccion.ABAJO;
+                case 'L' -> Direccion.IZQUIERDA;
+                case 'R' -> Direccion.DERECHA;
+                default -> null;
+            };
+            j.manejarEntrada(d);
+        }
+    }
+
+    public static void main(String[] args) {
+        GestorEventos eventos = new GestorEventos();
+        GestorPowerUps powerUps = new GestorPowerUps();
+        GestorLogros logros = new GestorLogros(eventos);
+        eventos.agregarObservador(logros);
+
+        List<TipoEvento> registro = new ArrayList<>();
+        eventos.agregarObservador(new Observador() {
+            public void actualizar(EventoJuego e) { registro.add(e.getTipo()); }
+        });
+
+        Juego juego = new Juego(eventos, powerUps);
+
+        // ---------- NIVEL 1 ----------
+        System.out.println("NIVEL 1");
+        juego.iniciarJuego();
+        check("nivel 1 cargado", juego.getNivelActual() == 1);
+        check("no hay victoria al arrancar", !juego.verificarVictoria());
+        mover(juego, "LURRR");
+        check("nivel 1 resuelto", juego.estaCompletado());
+        check("movimientos = 5", juego.getMovimientos() == 5);
+        check("empujes = 3", juego.getEmpujes() == 3);
+        check("puntaje > 0", juego.calcularPuntaje() > 0);
+        check("se emitio NIVEL_COMPLETADO", registro.contains(TipoEvento.NIVEL_COMPLETADO));
+        check("logro Primer paso desbloqueado",
+                logros.logrosDesbloqueados().stream().anyMatch(l -> l.getNombre().equals("Primer paso")));
+        check("logro Pulso firme desbloqueado",
+                logros.logrosDesbloqueados().stream().anyMatch(l -> l.getNombre().equals("Pulso firme")));
+
+        // ---------- NIVEL 2: caja llave, cerrojo y muro ----------
+        System.out.println("NIVEL 2");
+        check("avanza al nivel 2", juego.siguienteNivel());
+        check("nivel 2 cargado", juego.getNivelActual() == 2);
+        // Jugador (3,3) -> (1,3) rodeando, empuja L hasta (5,3), despues a (5,5)
+        mover(juego, "RRRRUULLLL");
+        mover(juego, "DDD");          // L: (2,3) -> (5,3)
+        mover(juego, "LD");           // jugador a (5,2)
+        mover(juego, "RR");           // L: (5,3) -> (5,5) = cerrojo
+        check("se abrio el cerrojo", registro.contains(TipoEvento.CERROJO_ABIERTO));
+        check("logro Cerrajero desbloqueado",
+                logros.logrosDesbloqueados().stream().anyMatch(l -> l.getNombre().equals("Cerrajero")));
+        check("el muro quedo transitable", juego.getTableroActual().obtenerCelda(2, 8).esTransitable());
+        mover(juego, "UURRRDDL");     // jugador hasta (5,6)
+        mover(juego, "UU");           // caja: (4,6) -> (2,6)
+        mover(juego, "LU");           // jugador a (2,5)
+        mover(juego, "RRRR");         // caja: (2,6) -> (2,10) = destino
+        check("nivel 2 resuelto", juego.estaCompletado());
+
+        // ---------- NIVEL 3: fragil, resbaladizo y power-up ----------
+        System.out.println("NIVEL 3");
+        check("avanza al nivel 3", juego.siguienteNivel());
+        mover(juego, "LD");           // jugador a (4,2)
+        mover(juego, "RR");           // F: (4,3) -> (4,5) = destino
+        check("la fragil no se rompio", juego.getTableroActual().cajaEn(4, 5) != null);
+        check("resistencia bajo a 1", juego.getTableroActual().cajaEn(4, 5).getResistencia() == 1);
+
+        // undo: 3 usos consecutivos de 5 movimientos, el cuarto no
+        int movAntes = juego.getMovimientos();
+        check("hay historial para deshacer", juego.puedeDeshacer());
+        check("undo 1", juego.deshacerMovimiento());
+        check("retrocedio movimientos", juego.getMovimientos() < movAntes);
+        check("undo 2 ya sin historial o permitido",
+                juego.getHistorial().getUsosConsecutivos() == 1);
+        check("se emitio UNDO_USADO", registro.contains(TipoEvento.UNDO_USADO));
+
+        // rehacer el tramo y resolver el nivel
+        juego.reiniciarNivel();
+        check("reinicio deja los contadores en cero", juego.getMovimientos() == 0);
+        mover(juego, "LD");
+        mover(juego, "RR");
+        mover(juego, "ULLU");         // jugador a (2,2)
+        mover(juego, "RRR");          // caja empujada al hielo, se desliza a (2,9)
+        check("la caja se deslizo hasta (2,9)", juego.getTableroActual().cajaEn(2, 9) != null);
+        mover(juego, "R");            // el jugador tambien resbala y queda en (2,8)
+        check("el jugador resbalo hasta (2,8)",
+                juego.getJugador().getFila() == 2 && juego.getJugador().getColumna() == 8);
+        mover(juego, "R");            // caja -> (2,10) destino
+        check("nivel 3 resuelto", juego.estaCompletado());
+        check("no hay nivel 4", !juego.siguienteNivel());
+
+        // ---------- Power-ups (Decorator) ----------
+        System.out.println("POWER-UPS");
+        juego.cargarNivel(3);
+        check("jugador crudo empuja 1 caja", juego.getJugador().cajasEmpujables() == 1);
+        juego.aplicarPowerUp(TipoPowerUp.FUERZA);
+        check("con Fuerza empuja 2", juego.getJugador().cajasEmpujables() == 2);
+        check("la descripcion muestra la cadena",
+                juego.getJugador().descripcion().contains("Fuerza"));
+        juego.aplicarPowerUp(TipoPowerUp.ANTIDESLIZANTE);
+        check("resiste deslizamiento", juego.getJugador().resisteDeslizamiento());
+        check("sigue empujando 2 (delegacion)", juego.getJugador().cajasEmpujables() == 2);
+        juego.aplicarPowerUp(TipoPowerUp.MANOS_DE_ACERO);
+        check("rompe fragiles", juego.getJugador().rompeFragiles());
+
+        // el power-up del nivel 3 esta en (3,10): se recoge al pisarlo
+        juego.cargarNivel(3);
+        mover(juego, "RRRRRRR");
+        check("recogio el power-up del nivel",
+                registro.contains(TipoEvento.POWERUP_RECOGIDO));
+        check("quedo con Fuerza activa", juego.getJugador().cajasEmpujables() == 2);
+
+        // expiracion: Fuerza dura 15 movimientos
+        juego.cargarNivel(3);
+        juego.aplicarPowerUp(TipoPowerUp.FUERZA);
+        for (int i = 0; i < 16; i++) {
+            mover(juego, i % 2 == 0 ? "U" : "D");
+        }
+        check("la Fuerza expiro y la cadena se desarmo", juego.getJugador().cajasEmpujables() == 1);
+
+        // manos de acero rompe la fragil de un empuje
+        juego.cargarNivel(3);
+        juego.aplicarPowerUp(TipoPowerUp.MANOS_DE_ACERO);
+        mover(juego, "LDR");
+        check("la fragil se rompio de un empuje", registro.contains(TipoEvento.CAJA_ROTA));
+        check("la caja rota ya no ocupa celda", juego.getTableroActual().cajaEn(4, 4) == null);
+
+        // ---------- undo con power-ups (pendiente 1 de la bitacora) ----------
+        System.out.println("UNDO CON POWER-UPS");
+        juego.cargarNivel(3);
+        mover(juego, "RRRRRRR");       // agarra FUERZA en (3,10)
+        check("tiene Fuerza antes del undo", juego.getJugador().cajasEmpujables() == 2);
+        juego.deshacerMovimiento();    // vuelve 5 movimientos: antes de agarrarlo
+        check("el undo desarmo la cadena de power-ups",
+                juego.getJugador().cajasEmpujables() == 1);
+        check("el power-up volvio al tablero",
+                !((sokoban.modelo.celdas.CasillaPowerUp) juego.getTableroActual()
+                        .obtenerCelda(3, 10)).estaRecogido());
+
+        System.out.println();
+        System.out.println(fallas == 0 ? "TODO OK" : (fallas + " FALLAS"));
+        System.exit(fallas == 0 ? 0 : 1);
+    }
+}

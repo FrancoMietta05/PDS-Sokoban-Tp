@@ -1,0 +1,268 @@
+# Bitácora de decisiones de diseño — Sokoban
+
+**Materia:** Proceso de Desarrollo de Software (PDS) — Prof. Pepe, UADE
+**Iniciada:** 12/11/2026, al cerrar el diagrama de clases y antes de empezar a codear.
+
+Este documento NO es el informe técnico. Es el registro de por qué el diseño quedó como quedó, escrito mientras las razones están frescas. Al terminar el código se convierte en el informe: se le agrega la estructura de paquetes, el apartado de MVC, las capturas y la declaración de uso de IA que pide el enunciado.
+
+Formato de cada entrada: qué se decidió, qué se descartó, y el problema concreto que la decisión evita. La parte que vale en la defensa es la del medio.
+
+---
+
+## 1. `GestorEventos` como publisher separado
+
+**DECISIÓN.** El rol de *Sujeto* del Observer lo cumple una clase propia, `GestorEventos`, que `Juego` contiene por composición. Los observadores (`GestorLogros`, `PanelHUD`, `ReproductorSonido`, `PanelNotificaciones`) se suscriben a ella, no a `Juego`.
+
+**ALTERNATIVA DESCARTADA.** Que `Juego` implemente `Sujeto` directamente y mantenga adentro la lista de observadores.
+
+**POR QUÉ.** Por dos motivos distintos:
+
+- *Responsabilidad única.* `Juego` ya es el controlador de la partida: carga niveles, maneja la entrada, verifica victoria, coordina el undo. El registro y la notificación de observadores es una responsabilidad que cambia por motivos independientes — agregar un logro nuevo o un panel nuevo no debería obligar a tocar la clase que lleva la partida.
+- *Dirección de las dependencias.* Varios eventos nacen en `Tablero`, no en `Juego`: el empuje, la caja rota, el cerrojo abierto. Si el Sujeto fuera `Juego`, `Tablero` tendría que conocer al controlador, que es una dependencia hacia arriba en la jerarquía. Dependiendo de `GestorEventos` —un servicio sin lógica de juego— `Tablero` apunta a algo estable y chico.
+
+**ESPERABLE EN LA DEFENSA.** *"¿Por qué no hiciste que `Juego` fuera el Sujeto, si ya es el que coordina todo?"*
+
+---
+
+## 2. Introducir la interfaz `IJugador`
+
+**DECISIÓN.** Se crea `IJugador`, que declara las preguntas que `Tablero` le hace al jugador antes de resolver un movimiento (`cajasEmpujables()`, `puedeAtravesar()`, `resisteDeslizamiento()`, `rompeFragiles()`, más posición y movimiento). `Jugador` la implementa, y `PowerUpDecorator` también. `Juego` y `Tablero` declaran su campo con el tipo de la interfaz, no con el de la clase concreta.
+
+**ALTERNATIVA DESCARTADA.** Que `PowerUpDecorator` heredara de `Jugador` o de `EntidadMovil`, evitando agregar un tipo nuevo.
+
+**POR QUÉ.**
+
+- *Técnico.* El Decorator exige que decorador y decorado compartan un tipo y que el decorador guarde una referencia a ese tipo. Si `PowerUpDecorator extends Jugador`, cada capa arrastraría una copia del estado del jugador (posición, contadores) y habría dos objetos reclamando la misma casilla del tablero. Heredando de una clase concreta el patrón no cierra.
+- *De diseño.* La interfaz obliga a declarar explícitamente qué reglas del juego son modificables por un power-up. Cada decorador concreto pisa exactamente un método y delega el resto. Si mañana se pide un power-up para el que no hay método que pisar, la interfaz avisa que esa regla todavía no está expuesta.
+- *Consecuencia buscada.* Después del cambio, a `Jugador` no le entra ninguna dependencia: nadie la nombra, todos hablan por `IJugador`. Eso es lo que permite que `Juego` guarde una cadena decorada en el mismo campo donde antes guardaba al jugador crudo.
+
+**ESPERABLE EN LA DEFENSA.** *"¿Por qué una interfaz nueva y no reusás `Jugador`?"*
+
+---
+
+## 3. Agregación, y no composición, entre `PowerUpDecorator` e `IJugador`
+
+**DECISIÓN.** La relación que expresa "el decorador envuelve a un `IJugador`" se modela como agregación (rombo hueco apoyado en `PowerUpDecorator`).
+
+**ALTERNATIVA DESCARTADA.** Composición (rombo relleno).
+
+**POR QUÉ.** La composición significa que el todo gobierna el ciclo de vida de la parte: si muere el decorador, muere el envuelto. Acá es falso. El `Jugador` lo crea `Juego` al cargar el nivel, existe desde antes de que aparezca el power-up, y sigue existiendo cuando el power-up se vence: `GestorPowerUps.quitarExpirados()` desarma la capa y devuelve intacto lo que había adentro. Modelarlo como composición diría que al expirar el power-up se destruye el jugador, que además de incorrecto rompería la partida.
+
+---
+
+## 4. `HistorialMovimientos` como caretaker, separado de `Juego`
+
+**DECISIÓN.** Memento con sus tres roles repartidos: `Juego` es el *originator* (sabe hacerse la foto con `crearMemento()` y volver a una con `restaurar()`), `Memento` es la foto (datos, sin comportamiento) y `HistorialMovimientos` es el *caretaker*: almacena los mementos sin abrirlos. Las reglas del enunciado —guardar 15 movimientos, poder retroceder de a 5, permitir 3 usos consecutivos— viven en el caretaker.
+
+**ALTERNATIVA DESCARTADA.** Que `Juego` mantuviera su propia pila de estados, o exponer getters públicos de posición, cajas y contadores para que otra clase armara el snapshot desde afuera.
+
+**POR QUÉ.**
+
+- *Encapsulamiento.* La segunda alternativa obliga a abrir el estado interno de `Juego` al mundo entero solo para poder deshacer: cualquiera podría leerlo y modificarlo. Con Memento el estado sale encapsulado, se guarda, y vuelve a entrar, y nadie salvo `Juego` sabe interpretarlo. El caretaker apila y desapila objetos cuyo contenido no puede ver.
+- *Separación de responsabilidades.* "Saber restaurar" y "decidir cuándo y cuánto restaurar" son dos cosas distintas. Por eso los límites de 15/5/3 están en `HistorialMovimientos` y no desparramados en `Juego`: si mañana cambian los números, se toca una sola clase.
+
+**ESPERABLE EN LA DEFENSA.** *"¿Quién es el caretaker y por qué no puede leer el memento?"*
+
+---
+
+## 5. `CasillaPowerUp` como subclase de `Celda`
+
+**DECISIÓN.** El power-up tirado en el nivel es una subclase más de `Celda`, al mismo nivel que `TerrenoResbaladizo` o `CasillaCerrojo`.
+
+**ALTERNATIVA DESCARTADA.** Agregarle a `Celda` un atributo `tipoPowerUp` que pueda ser nulo, y resolver con un `if` en el código de movimiento.
+
+**POR QUÉ.** Abierto/cerrado. El tablero ya resuelve el comportamiento de cada casilla por polimorfismo. Un flag en la clase base obligaría a modificar `Celda` y el código de movimiento cada vez que aparece un tipo nuevo de casilla, y dejaría a todas las celdas del nivel cargando un campo que casi ninguna usa. Como subclase, el power-up entra sin modificar nada de lo que ya funciona, exactamente igual que entró el terreno resbaladizo.
+
+---
+
+## 6. `TipoPowerUp` como intermediario entre la celda y el decorador
+
+**DECISIÓN.** `CasillaPowerUp.recoger()` devuelve un valor del enum `TipoPowerUp`. Es `GestorPowerUps.aplicar()` el que traduce ese valor al decorador concreto que corresponde.
+
+**ALTERNATIVA DESCARTADA.** Que `CasillaPowerUp` guardara e instanciara directamente el `PowerUpDecorator`.
+
+**POR QUÉ.**
+
+- Los niveles se cargan desde archivos .txt: de ahí sale un carácter, que mapea natural a un valor de enumeración, no a una instancia de clase.
+- Concentra en un solo lugar el conocimiento de qué clase corresponde a cada tipo. Si cambia la forma de construir un decorador, se toca `GestorPowerUps` y nada más; el resto del sistema maneja solo el enum.
+- Deja a la jerarquía de `Celda` sin ninguna dependencia hacia el subsistema de decoradores. Las celdas no saben que los power-ups se implementan con Decorator.
+
+---
+
+## Pendiente de resolver al codear
+
+- ~~**El `Memento` todavía no guarda los power-ups activos.**~~ **RESUELTO** — ver decisión 8.
+- ~~**`Jugador` tiene que implementar los 8 métodos de `IJugador`**, no solo `mover()`.~~ **RESUELTO** — implementa los 8, y la interfaz además creció; ver decisión 9.
+- ~~**Revisar si `Caja` debería heredar de `EntidadMovil`.**~~ **RESUELTO** — sí hereda; ver decisión 7.
+
+---
+
+## Decisiones tomadas durante la implementación
+
+*(Mismo formato. Todo lo que sigue es desviación del diagrama o cosa que el diagrama no contemplaba.)*
+
+### 7. `Caja` pasa a heredar de `EntidadMovil`
+
+**DECISIÓN.** `Caja extends EntidadMovil`, igual que `Jugador`.
+
+**ALTERNATIVA DESCARTADA.** Dejar `Caja` como jerarquía suelta, como estaba en el diagrama, y darle sus propios `fila`, `columna` y `mover()`.
+
+**POR QUÉ.** La alternativa es copiar y pegar: `fila`, `columna`, los dos getters y `mover(fila, columna)` quedaban duplicados palabra por palabra en dos jerarquías. `EntidadMovil` ya es exactamente la abstracción "cosa que ocupa una celda del tablero y se desplaza", y la caja lo es tanto como el jugador. Era el pendiente 3 y se resolvió a favor de la herencia.
+
+**OJO EN LA DEFENSA.** Esto cambia el diagrama: hay que redibujar la flecha de `Caja` a `EntidadMovil` antes de entregar.
+
+---
+
+### 8. El `Memento` guarda bastante más que lo que decía el diagrama
+
+**DECISIÓN.** Además de posición del jugador, cajas, movimientos y empujes, la foto guarda: resistencia y rotura de cada caja, qué muros estaban abiertos, qué cerrojos activados, qué power-ups del nivel ya estaban recogidos, y la cadena de power-ups activa sobre el jugador (`List<EstadoPowerUp>`, con tipo, duración y usos restantes de cada capa).
+
+**ALTERNATIVA DESCARTADA.** La del pendiente 1: guardar solo `List<TipoPowerUp>` y rearmar los decoradores con sus valores por defecto.
+
+**POR QUÉ.** Un memento tiene que poder reponer *todo* lo que un movimiento pudo haber cambiado, o el undo deja el tablero mezclado: cajas de hace 5 movimientos conviviendo con un muro que se abrió hace 2. Y guardar solo el tipo del power-up no alcanza: si agarré Fuerza hace 12 movimientos y deshago 5, me tiene que quedar la duración que tenía en ese momento, no una Fuerza nueva de 15. Por eso `EstadoPowerUp` lleva los tres datos.
+
+**DÓNDE VIVE `EstadoPowerUp`.** En el paquete `powerups`, no en `memento`. Así la dependencia va `memento → powerups` y el subsistema de power-ups no tiene que conocer al Memento.
+
+**ESPERABLE EN LA DEFENSA.** *"Agarrás un power-up y hacés undo: ¿qué pasa?"* — Está cubierto por una prueba: la cadena se desarma y el power-up vuelve a estar en el tablero sin recoger.
+
+---
+
+### 9. `IJugador` creció seis métodos
+
+**DECISIÓN.** A los 8 del diagrama se les sumaron `getMovimientos()`, `getEmpujes()`, `registrarEmpuje()`, `posicionar(fila, columna)`, `restaurarContadores(mov, emp)` y `notificarAtravesoPared()`.
+
+**POR QUÉ.** Es la consecuencia directa de la decisión 2, y conviene tenerla clara: si `Juego` y `Tablero` declaran el campo como `IJugador`, entonces *todo* lo que alguien necesite del jugador tiene que pasar por la interfaz. El HUD muestra los contadores y el Memento los guarda, así que los contadores tienen que ser visibles por ahí. Lo mismo `posicionar()`: el deslizamiento y la restauración reubican al jugador sin que eso cuente como un movimiento nuevo, y `mover(Direccion)` no sirve porque incrementa el contador.
+
+**LO QUE NO SE HIZO.** No se bajaron los contadores a `Juego` para achicar la interfaz. El diagrama los pone en `Jugador` y es donde corresponden: son datos del jugador, no del controlador.
+
+---
+
+### 10. `notificarAtravesoPared()`: la consulta no tiene efectos
+
+**DECISIÓN.** `puedeAtravesar(Celda)` es una consulta pura, no descuenta nada. `PowerUpFantasma` descuenta una pared recién cuando el tablero le avisa, con `notificarAtravesoPared()`, y eso pasa después de que el movimiento se concretó.
+
+**ALTERNATIVA DESCARTADA.** Descontar adentro de `puedeAtravesar()`, que es lo que sale natural.
+
+**POR QUÉ.** Separación consulta/comando. El tablero pregunta `puedeAtravesar()` mientras está evaluando el movimiento, y ese movimiento todavía puede caerse por otra regla (una caja atrás sin lugar, el borde del tablero). Si la pregunta descontara, un intento cancelado igual te comería una pared.
+
+---
+
+### 11. `Tablero.setJugador()`
+
+**DECISIÓN.** El tablero expone un setter del jugador, y `Juego` se lo reasigna cada vez que agrega o quita un power-up.
+
+**POR QUÉ.** Otra consecuencia del Decorator, y vale la pena saber explicarla: envolver al jugador no modifica el objeto, **crea otro** que es la nueva punta de la cadena. El tablero tiene que preguntarle a la punta, porque es la que sabe que ahora se empujan dos cajas. Si se quedara con la referencia vieja, el power-up no tendría ningún efecto sobre el movimiento.
+
+---
+
+### 12. `moverJugador()` devuelve un `ResultadoMovimiento` en vez de `void`
+
+**DECISIÓN.** Devuelve un objeto chico con tres datos: si se movió, si hubo empuje, y qué power-up se recogió.
+
+**POR QUÉ.** `Juego` saca la foto del estado *antes* de mover y la apila *después*, pero solo si el movimiento realmente pasó. Si no, el historial se llenaría de estados repetidos por cada vez que el jugador choca contra una pared, y un undo de "5 movimientos" retrocedería 5 intentos fallidos, o sea nada. Con `void`, `Juego` tendría que deducirlo comparando estados.
+
+---
+
+### 13. `TipoEvento.NIVEL_INICIADO`
+
+**DECISIÓN.** Se agregó un noveno valor al enum de eventos.
+
+**POR QUÉ.** `LogroSinDeshacer` lleva estado dentro del nivel (si se usó undo o no) y tiene que olvidarlo cuando arranca el siguiente. La opción era que `Juego` llamara a un `reiniciar()` de `GestorLogros`, pero eso obliga al controlador a conocer al gestor de logros, que es justo lo que el Observer vino a evitar: hoy `Juego` publica y no sabe quién escucha. Un evento más es más barato que una dependencia más.
+
+---
+
+### 14. La victoria se evalúa por destinos ocupados, no por cajas en destino
+
+**DECISIÓN.** Se gana cuando **todas las casillas destino tienen una caja encima**.
+
+**ALTERNATIVA DESCARTADA.** Recorrer las cajas y pedir que todas estén sobre un destino.
+
+**POR QUÉ.** La alternativa rompe con dos elementos del propio enunciado. La caja llave termina apoyada sobre un **cerrojo**, no sobre un destino: con la otra regla, un nivel con caja llave sería inganable. Y una caja frágil se puede **romper**: con la otra regla, romper una caja te daría la victoria más fácil, en vez de dejar el nivel irresoluble, que es lo lógico. Contando destinos ocupados los dos casos salen bien solos.
+
+---
+
+### 15. Una caja rota se marca, no se borra
+
+**DECISIÓN.** Al romperse, la caja queda en la lista del tablero con un flag `rota`. `cajaEn()` la ignora para colisiones y la vista no la dibuja.
+
+**POR QUÉ.** Si se sacara de la lista, el undo no tendría de dónde devolverla, y además se desalinearían las listas paralelas del memento (la foto de las cajas se guarda en el orden de carga del nivel, que no cambia durante la partida). Marcarla cuesta un booleano y deja el undo trivial.
+
+---
+
+### 16. El deslizamiento, interpretado
+
+**DECISIÓN.** Lo que entra en terreno resbaladizo sigue avanzando en la misma dirección hasta chocar con algo o hasta pisar una casilla que no resbale. Vale para las cajas (que es lo que pide el enunciado) y también para el jugador, porque el diagrama tiene `resisteDeslizamiento()` en `IJugador` y si el jugador no resbalara ese power-up no tendría sentido.
+
+**POR QUÉ ASÍ.** El enunciado dice que la caja se desliza "hasta chocar con otro objeto o llegar a un espacio vacío". Tomado literal no cierra: en este tablero *todo* el piso libre es espacio vacío, así que la caja no se movería nunca. La lectura que se adoptó es la que le da sentido a la regla: se desliza mientras esté sobre hielo y para al salir de él o al chocar.
+
+**DETALLE.** El jugador que resbala **no empuja**: si hay una caja adelante, el deslizamiento se frena. Y el deslizamiento usa `posicionar()`, no `mover()`, así que todo el patinazo cuenta como **un solo movimiento**.
+
+---
+
+### 17. `manejarEntrada()` recibe una `Direccion`, no una tecla
+
+**DECISIÓN.** La firma del diagrama es `manejarEntrada(tecla)`. En el código el controlador recibe un valor del enum `Direccion`, y es `VentanaPrincipal` la que traduce el `KeyEvent`.
+
+**POR QUÉ.** Es lo que sostiene el MVC: ninguna clase del modelo ni del controlador importa nada de `java.awt` ni de `javax.swing`. Si el controlador recibiera un `KeyEvent`, el modelo quedaría atado a Swing y no se podría probar sin levantar una ventana — de hecho toda la batería de pruebas de este trabajo corre sin interfaz gráfica.
+
+---
+
+### 18. Un solo grupo de cerrojos por nivel
+
+**DECISIÓN.** `CasillaCerrojo` tiene una `List<Muro>`, pero el cargador de niveles asocia todos los muros del nivel a todos sus cerrojos.
+
+**POR QUÉ.** El formato `.txt` de un carácter por casilla no tiene cómo expresar "este cerrojo abre estos muros". La estructura de datos ya soporta grupos; lo que falta es formato, no diseño. Si hiciera falta, se agrega una cabecera al archivo y no se toca ninguna clase.
+
+---
+
+## Estructura de paquetes
+
+```
+src/sokoban/
+├── Main.java                  punto de entrada
+├── modelo/                    Direccion, TipoPowerUp, Tablero, ResultadoMovimiento
+│   ├── celdas/                Celda y sus 7 subclases
+│   ├── entidades/             EntidadMovil, IJugador, Jugador, Caja y sus 3 subclases
+│   └── memento/               Memento (foto) e HistorialMovimientos (caretaker)
+├── eventos/                   Sujeto, Observador, GestorEventos, EventoJuego, TipoEvento
+├── logros/                    Logro, sus 5 subclases y GestorLogros        [adicional 1]
+├── powerups/                  PowerUpDecorator, sus 4 subclases, GestorPowerUps [adicional 2]
+├── controlador/               Juego
+└── vista/                     VentanaPrincipal, PanelTablero, PanelHUD,
+                               PanelNotificaciones, ReproductorSonido
+```
+
+**La regla que ordena todo esto:** las flechas de dependencia van de `vista` y `controlador` hacia `modelo`, nunca al revés. `modelo`, `eventos`, `logros`, `powerups` y `controlador` no importan **una sola clase de Swing**. Es verificable de una:
+
+```bash
+grep -rl "javax.swing" src/sokoban/modelo src/sokoban/eventos src/sokoban/logros src/sokoban/powerups src/sokoban/controlador
+```
+
+No devuelve nada. Toda la batería de pruebas del modelo corre sin levantar una ventana.
+
+**El único matiz, por si lo preguntan:** `Memento` y `Juego` importan `java.awt.Point`, porque el diagrama declara `-posJugador: Point`. `Point` es una clase de datos (dos `int` públicos), no un componente gráfico, así que no ata el modelo a la interfaz — pero es la única línea del modelo que menciona `java.awt` y conviene tenerla identificada antes de que la encuentre otro. Si se prefiere el modelo 100% libre de AWT, se reemplaza por dos `int` en `Memento` y se toca el diagrama; son cinco líneas.
+
+---
+
+## Patrones aplicados, y dónde mirarlos
+
+| Patrón | Clases | Para qué |
+|---|---|---|
+| **Observer** | `GestorEventos`, `Observador`, `GestorLogros`, `PanelHUD`, `PanelNotificaciones`, `ReproductorSonido`, `PanelTablero` | Que el modelo avise qué pasó sin saber quién escucha |
+| **Memento** | `Juego` (originator), `Memento`, `HistorialMovimientos` (caretaker) | Undo sin abrir el estado interno de `Juego` |
+| **Decorator** | `IJugador`, `PowerUpDecorator` y sus 4 subclases | Power-ups que cambian reglas sin tocar `Jugador` |
+| **Strategy (implícito)** | `Logro` y sus 5 subclases | Una condición de desbloqueo por clase |
+| **MVC** | `modelo` / `vista` / `controlador` | Modelo testeable sin interfaz gráfica |
+
+---
+
+## Para el informe técnico final
+
+- [x] Estructura de paquetes del proyecto — hecha más arriba
+- [x] Apartado de MVC: qué clases son modelo, cuáles vista, cuál el controlador, y por qué el modelo no conoce a Swing — hecho más arriba (decisión 17 + estructura de paquetes)
+- [ ] Reemplazar las figuras de color por imágenes de dominio público (`assets/imagenes/`) y cargar los `.wav` (`assets/sonidos/`) — el código ya los busca y funciona sin ellos
+- [ ] Principios SOLID y GRASP aplicados, con el ejemplo concreto de cada uno
+- [ ] Diagrama de clases final (verificar si el profe acepta draw.io o exige StarUML)
+- [ ] Capturas del juego
+- [ ] Declaración del uso de herramientas de IA (lo exige el enunciado)
+- [ ] Instrucciones para ejecutar, también en el README del repo
