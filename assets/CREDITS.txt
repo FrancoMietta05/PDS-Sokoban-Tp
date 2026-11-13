@@ -1,0 +1,52 @@
+ASSETS GRAFICOS
+===============
+
+Origen: "Sokoban" pack, por Kenney Vleugels (https://kenney.nl/assets/sokoban)
+Licencia: Creative Commons Zero (CC0 1.0) - dominio publico
+          http://creativecommons.org/publicdomain/zero/1.0/
+
+CC0 permite usar, modificar y redistribuir los assets en proyectos personales,
+educativos y comerciales. La atribucion no es obligatoria; se incluye igual.
+
+Correspondencia entre los archivos de este proyecto y los del pack original
+(todos de la carpeta "PNG/Default size", 64x64 px):
+
+  piso.png                     <- Ground/ground_06.png
+  pared.png                    <- Blocks/block_04.png
+  destino.png                  <- Ground/ground_03.png
+  muro_cerrado.png             <- Blocks/block_02.png
+  muro_abierto.png             <- Ground/ground_04.png
+  cerrojo.png                  <- Environment/environment_12.png
+  cerrojo_abierto.png          <- Environment/environment_06.png
+  powerup_fuerza.png           <- Environment/environment_02.png
+  powerup_manos_de_acero.png   <- Environment/environment_05.png
+  powerup_antideslizante.png   <- Environment/environment_08.png
+  powerup_fantasma.png         <- Environment/environment_10.png
+  caja_normal.png              <- Crates/crate_02.png
+  caja_normal_ok.png           <- Crates/crate_27.png
+  caja_fragil.png              <- Crates/crate_03.png
+  caja_fragil_ok.png           <- Crates/crate_28.png
+  caja_llave.png               <- Crates/crate_04.png
+  caja_llave_ok.png            <- Crates/crate_29.png
+  jugador.png                  <- Player/player_05.png
+
+OBRA DERIVADA
+-------------
+  resbaladizo.png
+
+El pack no incluye un tile de hielo. Se genero a partir de Ground/ground_06.png
+aplicandole un virado de color hacia el azul claro, conservando la luminancia y
+el canal alfa del original. La modificacion esta permitida por CC0 y el
+resultado se publica bajo la misma licencia.
+
+
+ASSETS SONOROS
+==============
+
+Pendiente. La carpeta assets/sonidos/ esta vacia: el pack de Kenney usado aca
+es solo grafico. El juego funciona sin sonidos (ReproductorSonido no reproduce
+nada si el .wav no existe).
+
+Al incorporarlos, anotar aca el origen y la licencia de cada uno, y recordar
+que javax.sound.sampled solo lee WAV, AU y AIFF: los .ogg y .mp3 hay que
+convertirlos a WAV PCM.

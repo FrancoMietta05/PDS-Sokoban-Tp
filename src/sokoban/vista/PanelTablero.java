@@ -25,6 +25,8 @@ import sokoban.modelo.celdas.Muro;
 import sokoban.modelo.celdas.Pared;
 import sokoban.modelo.celdas.TerrenoResbaladizo;
 import sokoban.modelo.entidades.Caja;
+import sokoban.modelo.entidades.CajaFragil;
+import sokoban.modelo.entidades.CajaLlave;
 
 /**
  * Vista del tablero. Lee el modelo para dibujarlo y no lo modifica nunca.
@@ -39,7 +41,7 @@ import sokoban.modelo.entidades.Caja;
  */
 public class PanelTablero extends JPanel implements Observador {
 
-    private static final int LADO_CELDA = 48;
+    private static final int LADO_CELDA = 64;
     private static final String CARPETA_IMAGENES = "assets/imagenes/";
 
     private final Juego juego;
@@ -92,7 +94,14 @@ public class PanelTablero extends JPanel implements Observador {
         int x = columna * LADO_CELDA;
         int y = fila * LADO_CELDA;
 
+        // El cerrojo y los power-ups son marcas que van encima del piso, no
+        // pisos en si: se dibuja primero la base y despues la marca, que tiene
+        // fondo transparente. Asi el sprite de la marca sirve sobre cualquier
+        // piso y no hay que tener una version por combinacion.
         String clave = claveDeCelda(celda);
+        if (celda instanceof CasillaCerrojo || celda instanceof CasillaPowerUp) {
+            dibujarImagen(g2, "piso", x, y);
+        }
         if (dibujarImagen(g2, clave, x, y)) {
             return;
         }
@@ -154,7 +163,7 @@ public class PanelTablero extends JPanel implements Observador {
         boolean enDestino =
                 tablero.obtenerCelda(caja.getFila(), caja.getColumna()) instanceof CasillaDestino;
 
-        String clave = "caja_" + caja.getSimbolo() + (enDestino ? "_ok" : "");
+        String clave = claveDeCaja(caja) + (enDestino ? "_ok" : "");
         if (dibujarImagen(g2, clave, x, y)) {
             return;
         }
@@ -227,6 +236,25 @@ public class PanelTablero extends JPanel implements Observador {
         }
         imagenes.put(clave, imagen);
         return imagen;
+    }
+
+    /**
+     * Nombre de archivo del sprite de una caja.
+     *
+     * La traduccion vive aca y no en el modelo a proposito. Antes la clave se
+     * armaba con Caja.getSimbolo(), que es el caracter del archivo .txt: eso
+     * ataba el nombre de un asset al formato de los niveles (y hacia que la
+     * caja normal buscara un archivo llamado "caja_$.png"). Son dos cosas que
+     * cambian por motivos distintos, asi que cada una vive donde corresponde.
+     */
+    private String claveDeCaja(Caja caja) {
+        if (caja instanceof CajaFragil) {
+            return "caja_fragil";
+        }
+        if (caja instanceof CajaLlave) {
+            return "caja_llave";
+        }
+        return "caja_normal";
     }
 
     private String claveDeCelda(Celda celda) {

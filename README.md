@@ -86,7 +86,11 @@ Para agregar un nivel alcanza con crear `niveles/nivel4.txt`: el juego lo detect
 
 ## Assets
 
-El juego busca imágenes en `assets/imagenes/*.png` y sonidos en `assets/sonidos/*.wav`. Si no están, dibuja figuras de color y no reproduce sonido, así que corre igual. Los nombres que busca están en `PanelTablero` y `ReproductorSonido`.
+Los gráficos son del pack **[Sokoban de Kenney](https://kenney.nl/assets/sokoban)**, con licencia **Creative Commons Zero (CC0 1.0)** — dominio público. Están en `assets/imagenes/`, y en [assets/CREDITS.txt](assets/CREDITS.txt) está anotado de qué archivo del pack original salió cada uno.
+
+El tile de terreno resbaladizo es obra derivada: el pack no trae hielo, así que se generó virando a azul el piso gris de Kenney. CC0 permite la modificación.
+
+**Los sonidos todavía no están.** `assets/sonidos/` está vacía. El juego funciona igual: si falta un `.wav`, ese evento no suena. Los nombres que busca están en `ReproductorSonido`.
 
 ## Documentación de diseño
 
