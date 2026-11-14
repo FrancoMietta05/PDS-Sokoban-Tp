@@ -9,8 +9,20 @@ import sokoban.eventos.TipoEvento;
 import sokoban.logros.GestorLogros;
 import sokoban.logros.Logro;
 import sokoban.modelo.Direccion;
+import sokoban.modelo.DirectorNivel;
+import sokoban.modelo.Tablero;
+import sokoban.modelo.TableroBuilder;
+import sokoban.modelo.celdas.Muro;
+import sokoban.modelo.entidades.CajaFragil;
+import sokoban.modelo.entidades.CajaLlave;
+import sokoban.modelo.entidades.CajaNormal;
+import sokoban.modelo.entidades.Jugador;
+import sokoban.modelo.fabricas.FabricaCajaFragil;
+import sokoban.modelo.fabricas.FabricaCajaLlave;
+import sokoban.modelo.fabricas.FabricaCajaNormal;
+import sokoban.modelo.fabricas.FabricaMuro;
+import sokoban.powerups.fabricas.FabricaPowerUpFuerza;
 import sokoban.modelo.TipoPowerUp;
-import sokoban.powerups.GestorPowerUps;
 
 /** Prueba de humo sin interfaz grafica. */
 public class PruebaSokoban {
@@ -36,8 +48,8 @@ public class PruebaSokoban {
     }
 
     public static void main(String[] args) {
-        GestorEventos eventos = new GestorEventos();
-        GestorPowerUps powerUps = new GestorPowerUps();
+        Juego juego = Juego.getInstance();
+        GestorEventos eventos = juego.getGestorEventos();
         GestorLogros logros = new GestorLogros(eventos);
         eventos.agregarObservador(logros);
 
@@ -46,7 +58,6 @@ public class PruebaSokoban {
             public void actualizar(EventoJuego e) { registro.add(e.getTipo()); }
         });
 
-        Juego juego = new Juego(eventos, powerUps);
 
         // ---------- NIVEL 1 ----------
         System.out.println("NIVEL 1");
@@ -162,6 +173,39 @@ public class PruebaSokoban {
         check("el power-up volvio al tablero",
                 !((sokoban.modelo.celdas.CasillaPowerUp) juego.getTableroActual()
                         .obtenerCelda(3, 10)).estaRecogido());
+
+        // ---------- Patrones: Singleton, Factory Method y Builder ----------
+        System.out.println("PATRONES");
+        check("Singleton: getInstance devuelve siempre la misma instancia", Juego.getInstance() == juego);
+        check("Factory Method: la fabrica de cajas devuelve el tipo que le toca",
+                new FabricaCajaFragil().crear(1, 2) instanceof CajaFragil
+                        && new FabricaCajaLlave().crear(1, 2) instanceof CajaLlave
+                        && new FabricaCajaNormal().crear(1, 2) instanceof CajaNormal);
+        check("Factory Method: la fabrica de muros respeta el estado inicial",
+                !((Muro) new FabricaMuro(false).crear(0, 0)).estaAbierto()
+                        && ((Muro) new FabricaMuro(true).crear(0, 0)).estaAbierto());
+        check("Factory Method: la fabrica de power-ups envuelve al jugador",
+                new FabricaPowerUpFuerza().crear(new Jugador(0, 0)).cajasEmpujables() == 2);
+
+        Tablero armado = new DirectorNivel().construirDesdeLineas(
+                List.of("#####", "#@$.#", "#####"), new TableroBuilder(eventos).nivel(9));
+        check("Builder: arma la grilla completa", armado.getFilas() == 3 && armado.getColumnas() == 5);
+        check("Builder: ubica jugador, cajas y destinos",
+                armado.getJugador().getFila() == 1 && armado.getJugador().getColumna() == 1
+                        && armado.getCajas().size() == 1 && armado.getDestinos().size() == 1);
+        check("Builder: conserva el numero de nivel", armado.getNivel() == 9);
+        boolean sinJugador = false;
+        try {
+            new DirectorNivel().construirDesdeLineas(List.of("###", "#.#", "###"), new TableroBuilder(eventos));
+        } catch (IllegalArgumentException e) {
+            sinJugador = true;
+        }
+        check("Builder: un nivel sin jugador no llega a ser Tablero", sinJugador);
+
+        Juego anterior = Juego.getInstance();
+        Juego.reiniciarInstancia();
+        check("Singleton: reiniciarInstancia permite arrancar una partida limpia",
+                Juego.getInstance() != anterior);
 
         System.out.println();
         System.out.println(fallas == 0 ? "TODO OK" : (fallas + " FALLAS"));

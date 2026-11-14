@@ -17,7 +17,6 @@ import sokoban.eventos.Observador;
 import sokoban.eventos.TipoEvento;
 import sokoban.logros.GestorLogros;
 import sokoban.modelo.Direccion;
-import sokoban.powerups.GestorPowerUps;
 
 /**
  * Ventana del juego. Arma el cableado de toda la aplicacion: crea el
@@ -31,11 +30,11 @@ import sokoban.powerups.GestorPowerUps;
  */
 public class VentanaPrincipal extends JFrame implements Observador {
 
-    private final GestorEventos gestorEventos = new GestorEventos();
-    private final GestorPowerUps gestorPowerUps = new GestorPowerUps();
+    // Juego es Singleton: la ventana no lo crea, lo pide. El orden importa:
+    // el resto de los campos depende de que juego ya este inicializado.
+    private final Juego juego = Juego.getInstance();
+    private final GestorEventos gestorEventos = juego.getGestorEventos();
     private final GestorLogros gestorLogros = new GestorLogros(gestorEventos);
-
-    private final Juego juego = new Juego(gestorEventos, gestorPowerUps);
 
     private final PanelTablero panelTablero = new PanelTablero(juego);
     private final PanelHUD panelHUD = new PanelHUD(juego);
