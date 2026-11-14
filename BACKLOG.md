@@ -203,3 +203,17 @@ Cada integrante defiende el proyecto entero. Las preguntas que ya están identif
 - **`resbaladizo.png` es obra derivada** — el pack no trae hielo; se generó virando a azul el piso gris de Kenney. Permitido por CC0 y anotado en `CREDITS.txt`.
 
 Sigue pendiente de la Épica A: **SOK-04 (sonidos)**. La carpeta `assets/sonidos/` está vacía y el juego anda igual, sin audio.
+
+---
+
+## Bug corregido el 14/11/2026 — el teclado moría al tocar un botón
+
+**Síntoma.** Después de hacer clic en *Reiniciar nivel* (o en *Deshacer*), las flechas dejaban de mover al jugador.
+
+**Causa.** La entrada se leía con un `KeyListener` sobre `PanelTablero`. Un `KeyListener` solo recibe teclas si su componente tiene el foco, y al clickear un botón el foco se iba al `JButton`. Confirmado midiendo el `focusOwner` antes y después de un clic real.
+
+**Arreglo.** Se reemplazó el `KeyListener` por **key bindings** con `WHEN_IN_FOCUSED_WINDOW`, que entregan la tecla mientras la ventana esté activa, sin importar qué componente tenga el foco. Además los botones del HUD ahora son `setFocusable(false)`, así el tablero conserva el foco y no aparece el recuadro saltando entre botones.
+
+**Regresión.** `test/PruebaFoco.java` reproduce el escenario con `Robot`: clic en cada botón y después movimiento con flechas. Necesita pantalla, por eso está separada de `PruebaSokoban`.
+
+**Para la defensa.** Es un buen ejemplo de por qué en Swing se prefieren key bindings sobre `KeyListener`, y de que el bug estaba en la vista sin tocar una línea del modelo.
