@@ -8,8 +8,10 @@ import sokoban.eventos.EventoJuego;
 import sokoban.eventos.GestorEventos;
 import sokoban.eventos.TipoEvento;
 import sokoban.modelo.Direccion;
+import sokoban.modelo.DirectorNivel;
 import sokoban.modelo.ResultadoMovimiento;
 import sokoban.modelo.Tablero;
+import sokoban.modelo.TableroBuilder;
 import sokoban.modelo.TipoPowerUp;
 import sokoban.modelo.entidades.IJugador;
 import sokoban.modelo.memento.HistorialMovimientos;
@@ -17,7 +19,8 @@ import sokoban.modelo.memento.Memento;
 import sokoban.powerups.GestorPowerUps;
 
 /**
- * Controlador de la partida: carga niveles, recibe la entrada ya traducida,
+ * Controlador de la partida: carga niveles (pidiendoselos al DirectorNivel y
+ * al TableroBuilder, patron Builder), recibe la entrada ya traducida,
  * coordina el undo y decide cuando termino el nivel.
  *
  * En el Memento cumple el rol de originator: es el unico que sabe armar la
@@ -31,15 +34,25 @@ import sokoban.powerups.GestorPowerUps;
  *
  * No conoce Swing. Recibe Direccion y no KeyEvent, y avisa lo que pasa
  * publicando eventos; es la vista la que se suscribe y traduce las teclas.
+ *
+ * Patron Singleton: hay una unica partida por aplicacion, asi que Juego tiene
+ * constructor privado y se obtiene con getInstance(). Como la instancia es
+ * unica, tambien es duena de sus colaboradores (GestorEventos y
+ * GestorPowerUps): los crea ella y los expone con getGestorEventos(), que es
+ * por donde la vista y los logros se suscriben. reiniciarInstancia() existe
+ * solo para que las pruebas puedan arrancar de cero.
  */
 public class Juego {
 
     public static final String CARPETA_NIVELES = "niveles";
     public static final int PRIMER_NIVEL = 1;
 
+    private static Juego instancia;
+
     private final GestorEventos gestorEventos;
     private final GestorPowerUps gestorPowerUps;
     private final HistorialMovimientos historial = new HistorialMovimientos();
+    private final DirectorNivel directorNivel = new DirectorNivel();
 
     private Tablero tableroActual;
     private IJugador jugador;
@@ -47,9 +60,22 @@ public class Juego {
     private boolean nivelCompletado;
     private int usosUndo;
 
-    public Juego(GestorEventos gestorEventos, GestorPowerUps gestorPowerUps) {
-        this.gestorEventos = gestorEventos;
-        this.gestorPowerUps = gestorPowerUps;
+    private Juego() {
+        this.gestorEventos = new GestorEventos();
+        this.gestorPowerUps = new GestorPowerUps();
+    }
+
+    /** Unica instancia de la partida; se crea la primera vez que se pide. */
+    public static synchronized Juego getInstance() {
+        if (instancia == null) {
+            instancia = new Juego();
+        }
+        return instancia;
+    }
+
+    /** Descarta la instancia actual. Solo para pruebas: la proxima llamada crea una nueva. */
+    public static synchronized void reiniciarInstancia() {
+        instancia = null;
     }
 
     // ==================================================================
@@ -62,9 +88,8 @@ public class Juego {
     }
 
     public void cargarNivel(int numero) {
-        Tablero tablero = new Tablero(gestorEventos);
-        tablero.cargarNivel(rutaNivel(numero));
-        tablero.setNivel(numero);
+        TableroBuilder builder = new TableroBuilder(gestorEventos).nivel(numero);
+        Tablero tablero = directorNivel.construir(rutaNivel(numero), builder);
 
         this.tableroActual = tablero;
         this.nivelActual = numero;
@@ -247,6 +272,10 @@ public class Juego {
     // ==================================================================
     // Consultas para la vista
     // ==================================================================
+
+    public GestorEventos getGestorEventos() {
+        return gestorEventos;
+    }
 
     public Tablero getTableroActual() {
         return tableroActual;

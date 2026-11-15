@@ -215,18 +215,45 @@ Formato de cada entrada: qué se decidió, qué se descartó, y el problema conc
 
 ---
 
+### 19. `Juego` es Singleton
+
+**DECISIÓN.** `Juego` tiene constructor privado y se obtiene con `Juego.getInstance()`. Como la instancia es única, ella misma crea y posee a `GestorEventos` y `GestorPowerUps` (los expone con `getGestorEventos()`). `reiniciarInstancia()` existe solo para pruebas.
+
+**POR QUÉ.** Hay una sola partida por aplicación y varias clases necesitan hablar con ella; el Singleton garantiza que no haya dos controladores con dos historiales distintos. El costo es el estado global, y por eso la vista y los paneles igual reciben `juego` por constructor en lugar de llamar a `getInstance()` por su cuenta.
+
+---
+
+### 20. Factory Method para celdas, cajas y power-ups
+
+**DECISIÓN.** Los `switch` que instanciaban clases concretas desaparecen: `FabricaCelda`, `FabricaCaja` y `FabricaPowerUp` son los creadores, y cada `FabricaXxx` concreta decide qué subclase instancia. `DirectorNivel` y `GestorPowerUps` guardan un mapa carácter/tipo → fábrica.
+
+**POR QUÉ.** Sumar un tipo de celda, caja o power-up es sumar una clase fábrica y registrarla; ya no se edita el código que arma el tablero ni el gestor de power-ups (principio abierto/cerrado).
+
+---
+
+### 21. Builder para armar el `Tablero`
+
+**DECISIÓN.** `Tablero` ya no se construye ni lee archivos: es el producto. `TableroBuilder` lo arma paso a paso (`dimensiones`, `agregarCelda`, `agregarCaja`, `colocarJugador`, `build`) y `DirectorNivel`, que es el único que conoce el formato `.txt`, dirige los pasos. El constructor de `Tablero` es package-private.
+
+**POR QUÉ.** `Tablero` mezclaba tres responsabilidades (leer archivos, interpretar el formato y aplicar reglas). Ahora solo aplica reglas, y el builder garantiza que un nivel sin jugador o con celdas sin definir nunca llegue a ser un `Tablero`.
+
+---
+
 ## Estructura de paquetes
 
 ```
 src/sokoban/
 ├── Main.java                  punto de entrada
-├── modelo/                    Direccion, TipoPowerUp, Tablero, ResultadoMovimiento
+├── modelo/                    Direccion, TipoPowerUp, Tablero, ResultadoMovimiento,
+│   │                          TableroBuilder, DirectorNivel                   [Builder]
 │   ├── celdas/                Celda y sus 7 subclases
 │   ├── entidades/             EntidadMovil, IJugador, Jugador, Caja y sus 3 subclases
+│   ├── fabricas/              FabricaCelda, FabricaCaja y sus fábricas        [Factory Method]
 │   └── memento/               Memento (foto) e HistorialMovimientos (caretaker)
 ├── eventos/                   Sujeto, Observador, GestorEventos, EventoJuego, TipoEvento
 ├── logros/                    Logro, sus 5 subclases y GestorLogros        [adicional 1]
 ├── powerups/                  PowerUpDecorator, sus 4 subclases, GestorPowerUps [adicional 2]
+│   └── fabricas/              FabricaPowerUp y sus 4 fábricas                 [Factory Method]
 ├── controlador/               Juego
 └── vista/                     VentanaPrincipal, PanelTablero, PanelHUD,
                                PanelNotificaciones, ReproductorSonido
@@ -251,6 +278,9 @@ No devuelve nada. Toda la batería de pruebas del modelo corre sin levantar una 
 | **Observer** | `GestorEventos`, `Observador`, `GestorLogros`, `PanelHUD`, `PanelNotificaciones`, `ReproductorSonido`, `PanelTablero` | Que el modelo avise qué pasó sin saber quién escucha |
 | **Memento** | `Juego` (originator), `Memento`, `HistorialMovimientos` (caretaker) | Undo sin abrir el estado interno de `Juego` |
 | **Decorator** | `IJugador`, `PowerUpDecorator` y sus 4 subclases | Power-ups que cambian reglas sin tocar `Jugador` |
+| **Singleton** | `Juego` | Una única partida por aplicación |
+| **Factory Method** | `FabricaCelda`, `FabricaCaja`, `FabricaPowerUp` y sus fábricas concretas | Crear celdas, cajas y decoradores sin `switch` ni `new` en quien los usa |
+| **Builder** | `DirectorNivel` (director), `TableroBuilder` (builder), `Tablero` (producto) | Separar la construcción del tablero de sus reglas |
 | **Strategy (implícito)** | `Logro` y sus 5 subclases | Una condición de desbloqueo por clase |
 | **MVC** | `modelo` / `vista` / `controlador` | Modelo testeable sin interfaz gráfica |
 

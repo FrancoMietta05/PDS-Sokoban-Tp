@@ -65,3 +65,10 @@ Correspondencia:
   logro.wav             <- InterfaceSounds/confirmation_002.ogg
 
 A movimiento.wav se le bajo el volumen porque suena en cada paso del jugador.
+
+
+FUENTE
+======
+
+"Press Start 2P" (assets/fuentes/PressStart2P-Regular.ttf), por CodeMan38.
+Licencia: SIL Open Font License 1.1 - https://openfontlicense.org
