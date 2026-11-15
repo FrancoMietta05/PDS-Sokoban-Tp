@@ -2,8 +2,8 @@ package sokoban.vista;
 
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.event.WindowEvent;
 import javax.swing.JFrame;
-import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 
 import sokoban.controlador.Juego;
@@ -36,6 +36,8 @@ public class VentanaPrincipal extends JFrame implements Observador {
     private final PanelHUD panelHUD = new PanelHUD(juego);
     private final PanelNotificaciones panelNotificaciones = new PanelNotificaciones();
     private final ReproductorSonido reproductorSonido = new ReproductorSonido();
+    private final PanelResumen panelResumen = new PanelResumen();
+    private final PanelFinal panelFinal = new PanelFinal();
 
     public VentanaPrincipal() {
         super("Sokoban - PDS");
@@ -57,6 +59,7 @@ public class VentanaPrincipal extends JFrame implements Observador {
         fondo.agregarCentrado(panelHUD.getBotonReiniciar(), 2351, 1361, 320, 120);
         fondo.agregar(panelNotificaciones, 620, 1318, 1500, 64);
         setContentPane(fondo);
+        setGlassPane(panelResumen);
 
         panelTablero.addKeyListener(new KeyAdapter() {
             @Override
@@ -123,24 +126,42 @@ public class VentanaPrincipal extends JFrame implements Observador {
     }
 
     private void mostrarResumen(EventoJuego e) {
-        StringBuilder texto = new StringBuilder();
-        texto.append("Nivel ").append(e.getNivel()).append(" completado\n\n");
-        texto.append("Movimientos: ").append(e.getDatoEntero(EventoJuego.CLAVE_MOVIMIENTOS, 0)).append('\n');
-        texto.append("Empujes: ").append(e.getDatoEntero(EventoJuego.CLAVE_EMPUJES, 0)).append('\n');
-        texto.append("Usos de deshacer: ").append(e.getDatoEntero(EventoJuego.CLAVE_UNDOS, 0)).append('\n');
-        texto.append("Puntaje: ").append(e.getDatoEntero(EventoJuego.CLAVE_PUNTAJE, 0)).append("\n\n");
-        texto.append("Logros desbloqueados: ").append(gestorLogros.logrosDesbloqueados().size())
-                .append(" de ").append(gestorLogros.getLogros().size());
+        setGlassPane(panelResumen);
+        panelResumen.mostrar(
+                e.getDatoEntero(EventoJuego.CLAVE_MOVIMIENTOS, 0),
+                e.getDatoEntero(EventoJuego.CLAVE_EMPUJES, 0),
+                e.getDatoEntero(EventoJuego.CLAVE_UNDOS, 0),
+                e.getDatoEntero(EventoJuego.CLAVE_PUNTAJE, 0),
+                gestorLogros.logrosDesbloqueados().size(),
+                gestorLogros.getLogros().size(),
+                this::pasarAlSiguienteNivel,
+                () -> {
+                    juego.reiniciarNivel();
+                    panelTablero.requestFocusInWindow();
+                });
+    }
 
-        JOptionPane.showMessageDialog(this, texto.toString(),
-                "Resumen del nivel", JOptionPane.INFORMATION_MESSAGE);
-
+    private void pasarAlSiguienteNivel() {
         if (!juego.siguienteNivel()) {
-            JOptionPane.showMessageDialog(this,
-                    "Terminaste todos los niveles disponibles.",
-                    "Fin del juego", JOptionPane.INFORMATION_MESSAGE);
+            mostrarFinal();
             return;
         }
         panelTablero.requestFocusInWindow();
+    }
+
+    /** Se completo el ultimo nivel: muestra la pantalla final con sus dos salidas. */
+    private void mostrarFinal() {
+        setGlassPane(panelFinal);
+        panelFinal.mostrar(
+                () -> {
+                    juego.iniciarJuego();
+                    panelTablero.requestFocusInWindow();
+                },
+                this::cerrarVentana);
+    }
+
+    /** Cierra por el mismo camino que la X de la ventana, para respetar el DefaultCloseOperation. */
+    private void cerrarVentana() {
+        dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
     }
 }
