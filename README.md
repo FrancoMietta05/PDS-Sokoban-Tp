@@ -75,7 +75,7 @@ Los niveles son archivos de texto en `niveles/nivelN.txt`, un carácter por casi
 | `+` | Jugador sobre destino |
 | `$` | Caja normal |
 | `*` | Caja normal sobre destino |
-| `F` | Caja frágil |
+| `F` / `G` / `H` | Caja frágil de resistencia 3 / 5 / 8 |
 | `L` | Caja llave |
 | `~` | Terreno resbaladizo |
 | `c` | Casillero cerrojo |
