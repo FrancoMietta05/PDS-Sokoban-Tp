@@ -1,15 +1,24 @@
 package sokoban.powerups;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 import sokoban.modelo.TipoPowerUp;
 import sokoban.modelo.entidades.IJugador;
+import sokoban.powerups.fabricas.FabricaPowerUp;
+import sokoban.powerups.fabricas.FabricaPowerUpAntideslizante;
+import sokoban.powerups.fabricas.FabricaPowerUpFantasma;
+import sokoban.powerups.fabricas.FabricaPowerUpFuerza;
+import sokoban.powerups.fabricas.FabricaPowerUpManosDeAcero;
 
 /**
- * Unico lugar del sistema que sabe que clase de decorador corresponde a cada
+ * Unico lugar del sistema que sabe que fabrica corresponde a cada
  * TipoPowerUp (decision 6 de la bitacora). El resto del sistema maneja solo
- * el enum.
+ * el enum. Las clases concretas de decorador las conocen unicamente las
+ * FabricaPowerUp (patron Factory Method): este gestor ya no tiene ningun
+ * switch sobre el tipo.
  *
  * Tambien es el que arma y desarma la cadena de decoradores. Todos sus metodos
  * devuelven el IJugador resultante en lugar de modificar el recibido, porque
@@ -18,12 +27,21 @@ import sokoban.modelo.entidades.IJugador;
  */
 public class GestorPowerUps {
 
+    private final Map<TipoPowerUp, FabricaPowerUp> fabricas = new EnumMap<>(TipoPowerUp.class);
+
+    public GestorPowerUps() {
+        fabricas.put(TipoPowerUp.FUERZA, new FabricaPowerUpFuerza());
+        fabricas.put(TipoPowerUp.ANTIDESLIZANTE, new FabricaPowerUpAntideslizante());
+        fabricas.put(TipoPowerUp.FANTASMA, new FabricaPowerUpFantasma());
+        fabricas.put(TipoPowerUp.MANOS_DE_ACERO, new FabricaPowerUpManosDeAcero());
+    }
+
     /** Envuelve al jugador con el decorador que corresponde al tipo recogido. */
     public IJugador aplicar(TipoPowerUp tipo, IJugador jugador) {
         if (tipo == null) {
             return jugador;
         }
-        return crear(tipo, jugador, -2, -2);
+        return fabricaDe(tipo).crear(jugador);
     }
 
     /**
@@ -62,7 +80,8 @@ public class GestorPowerUps {
         IJugador resultado = base;
         for (int i = vigentes.size() - 1; i >= 0; i--) {
             PowerUpDecorator capa = vigentes.get(i);
-            resultado = crear(capa.getTipo(), resultado, capa.getDuracion(), capa.getUsosRestantes());
+            resultado = fabricaDe(capa.getTipo())
+                    .recrear(resultado, capa.getDuracion(), capa.getUsosRestantes());
         }
         return resultado;
     }
@@ -91,7 +110,8 @@ public class GestorPowerUps {
         }
         for (int i = estados.size() - 1; i >= 0; i--) {
             EstadoPowerUp estado = estados.get(i);
-            resultado = crear(estado.getTipo(), resultado, estado.getDuracion(), estado.getUsosRestantes());
+            resultado = fabricaDe(estado.getTipo())
+                    .recrear(resultado, estado.getDuracion(), estado.getUsosRestantes());
         }
         return resultado;
     }
@@ -105,27 +125,13 @@ public class GestorPowerUps {
         return actual;
     }
 
-    /**
-     * Fabrica de decoradores: el unico switch sobre TipoPowerUp del sistema.
-     * Con duracion o usos en -2 se usan los valores por defecto del power-up.
-     */
-    private PowerUpDecorator crear(TipoPowerUp tipo, IJugador envuelto, int duracion, int usos) {
-        switch (tipo) {
-            case FUERZA:
-                return new PowerUpFuerza(envuelto,
-                        duracion == -2 ? PowerUpFuerza.DURACION_POR_DEFECTO : duracion);
-            case ANTIDESLIZANTE:
-                return new PowerUpAntideslizante(envuelto,
-                        duracion == -2 ? PowerUpAntideslizante.DURACION_POR_DEFECTO : duracion);
-            case MANOS_DE_ACERO:
-                return new PowerUpManosDeAcero(envuelto,
-                        duracion == -2 ? PowerUpManosDeAcero.DURACION_POR_DEFECTO : duracion);
-            case FANTASMA:
-                return new PowerUpFantasma(envuelto,
-                        usos == -2 ? PowerUpFantasma.PAREDES_POR_DEFECTO : usos);
-            default:
-                throw new IllegalArgumentException("Power-up no contemplado: " + tipo);
+    /** Busca la fabrica del tipo; si el tipo no se registro es un error de programacion. */
+    private FabricaPowerUp fabricaDe(TipoPowerUp tipo) {
+        FabricaPowerUp fabrica = fabricas.get(tipo);
+        if (fabrica == null) {
+            throw new IllegalArgumentException("Power-up no contemplado: " + tipo);
         }
+        return fabrica;
     }
 
     private int capas(IJugador jugador) {

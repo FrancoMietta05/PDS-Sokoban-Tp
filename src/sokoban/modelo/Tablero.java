@@ -1,11 +1,5 @@
 package sokoban.modelo;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,16 +10,10 @@ import sokoban.modelo.celdas.CasillaCerrojo;
 import sokoban.modelo.celdas.CasillaDestino;
 import sokoban.modelo.celdas.CasillaPowerUp;
 import sokoban.modelo.celdas.Celda;
-import sokoban.modelo.celdas.EspacioVacio;
 import sokoban.modelo.celdas.Muro;
-import sokoban.modelo.celdas.Pared;
 import sokoban.modelo.celdas.TerrenoResbaladizo;
 import sokoban.modelo.entidades.Caja;
-import sokoban.modelo.entidades.CajaFragil;
-import sokoban.modelo.entidades.CajaLlave;
-import sokoban.modelo.entidades.CajaNormal;
 import sokoban.modelo.entidades.IJugador;
-import sokoban.modelo.entidades.Jugador;
 import sokoban.modelo.memento.Memento;
 
 /**
@@ -34,9 +22,13 @@ import sokoban.modelo.memento.Memento;
  * que conoce a la vez las celdas vecinas y las cajas.
  *
  * Compone sus celdas y sus cajas (rombo relleno en el diagrama: se crean y se
- * mueren con el tablero) y solo conoce al jugador (rombo hueco: lo crea al
- * cargar el nivel y despues lo administra Juego, que puede reemplazarlo por
- * una cadena decorada).
+ * mueren con el tablero) y solo conoce al jugador (rombo hueco: lo crea el
+ * builder y despues lo administra Juego, que puede reemplazarlo por una cadena
+ * decorada).
+ *
+ * No se construye a si mismo: es el producto del patron Builder. Lo arma
+ * TableroBuilder, dirigido por DirectorNivel, que es quien lee los archivos de
+ * nivel. Aca quedan solo las reglas de movimiento y el soporte del Memento.
  *
  * Publica eventos a traves de GestorEventos y no a traves de Juego: varios
  * eventos nacen aca -el empuje, la caja rota, el cerrojo abierto- y hacerlo
@@ -49,190 +41,44 @@ import sokoban.modelo.memento.Memento;
  */
 public class Tablero {
 
-    /** Mapa de caracteres del archivo .txt a elementos del tablero. */
-    public static final char CH_PARED = '#';
-    public static final char CH_VACIO = ' ';
-    public static final char CH_DESTINO = '.';
-    public static final char CH_JUGADOR = '@';
-    public static final char CH_JUGADOR_EN_DESTINO = '+';
-    public static final char CH_CAJA = '$';
-    public static final char CH_CAJA_EN_DESTINO = '*';
-    public static final char CH_CAJA_FRAGIL = 'F';
-    public static final char CH_CAJA_LLAVE = 'L';
-    public static final char CH_RESBALADIZO = '~';
-    public static final char CH_CERROJO = 'c';
-    public static final char CH_MURO_CERRADO = 'M';
-    public static final char CH_MURO_ABIERTO = 'm';
-
     private final GestorEventos gestorEventos;
+    private final int nivel;
+    private final int filas;
+    private final int columnas;
 
-    private Celda[][] celdas = new Celda[0][0];
-    private final List<Caja> cajas = new ArrayList<>();
-    private final List<Muro> muros = new ArrayList<>();
-    private final List<CasillaCerrojo> cerrojos = new ArrayList<>();
-    private final List<CasillaPowerUp> casillasPowerUp = new ArrayList<>();
-    private final List<CasillaDestino> destinos = new ArrayList<>();
+    private final Celda[][] celdas;
+    private final List<Caja> cajas;
+    private final List<Muro> muros;
+    private final List<CasillaCerrojo> cerrojos;
+    private final List<CasillaPowerUp> casillasPowerUp;
+    private final List<CasillaDestino> destinos;
 
     private IJugador jugador;
-    private int filas;
-    private int columnas;
-    private int nivel;
-
-    public Tablero(GestorEventos gestorEventos) {
-        this.gestorEventos = gestorEventos;
-    }
-
-    // ==================================================================
-    // Carga de nivel
-    // ==================================================================
 
     /**
-     * Lee la disposicion inicial desde un archivo de texto.
-     *
-     * Busca primero en el sistema de archivos y, si no esta, en el classpath,
-     * para que el juego ande igual corriendo desde la carpeta del proyecto o
-     * empaquetado en un jar.
+     * Solo lo invoca TableroBuilder (mismo paquete): un tablero no se arma a
+     * mano, se pide al builder, que garantiza que llegue completo y coherente.
      */
-    public void cargarNivel(String archivo) {
-        List<String> lineas = leerLineas(archivo);
-        if (lineas.isEmpty()) {
-            throw new IllegalArgumentException("El nivel esta vacio: " + archivo);
-        }
-        construir(lineas);
-    }
-
-    /** Variante para tests y para niveles embebidos en el codigo. */
-    public void cargarDesdeLineas(List<String> lineas) {
-        construir(lineas);
-    }
-
-    private List<String> leerLineas(String archivo) {
-        Path ruta = Path.of(archivo);
-        if (Files.exists(ruta)) {
-            try {
-                return Files.readAllLines(ruta, StandardCharsets.UTF_8);
-            } catch (IOException e) {
-                throw new IllegalStateException("No se pudo leer el nivel: " + archivo, e);
-            }
-        }
-        String recurso = archivo.startsWith("/") ? archivo : "/" + archivo;
-        try (var entrada = Tablero.class.getResourceAsStream(recurso)) {
-            if (entrada == null) {
-                throw new IllegalArgumentException("No se encontro el nivel: " + archivo);
-            }
-            try (BufferedReader lector =
-                         new BufferedReader(new InputStreamReader(entrada, StandardCharsets.UTF_8))) {
-                List<String> lineas = new ArrayList<>();
-                String linea;
-                while ((linea = lector.readLine()) != null) {
-                    lineas.add(linea);
-                }
-                return lineas;
-            }
-        } catch (IOException e) {
-            throw new IllegalStateException("No se pudo leer el nivel: " + archivo, e);
-        }
-    }
-
-    private void construir(List<String> lineas) {
-        cajas.clear();
-        muros.clear();
-        cerrojos.clear();
-        casillasPowerUp.clear();
-        destinos.clear();
-        jugador = null;
-
-        filas = lineas.size();
-        columnas = 0;
-        for (String linea : lineas) {
-            columnas = Math.max(columnas, linea.length());
-        }
-        celdas = new Celda[filas][columnas];
-
-        for (int f = 0; f < filas; f++) {
-            String linea = lineas.get(f);
-            for (int c = 0; c < columnas; c++) {
-                char ch = c < linea.length() ? linea.charAt(c) : CH_VACIO;
-                celdas[f][c] = interpretar(ch, f, c);
-            }
-        }
-
-        // El formato actual declara un solo grupo de cerrojos por nivel: todos
-        // los cerrojos abren todos los muros. La estructura (una lista de muros
-        // por cerrojo) ya soporta grupos si el formato los llega a declarar.
-        for (CasillaCerrojo cerrojo : cerrojos) {
-            for (Muro muro : muros) {
-                cerrojo.asociarMuro(muro);
-            }
-        }
-
-        if (jugador == null) {
-            throw new IllegalArgumentException("El nivel no tiene jugador");
-        }
-    }
-
-    private Celda interpretar(char ch, int fila, int columna) {
-        switch (ch) {
-            case CH_PARED:
-                return new Pared(fila, columna);
-            case CH_DESTINO: {
-                CasillaDestino destino = new CasillaDestino(fila, columna);
-                destinos.add(destino);
-                return destino;
-            }
-            case CH_JUGADOR:
-                jugador = new Jugador(fila, columna);
-                return new EspacioVacio(fila, columna);
-            case CH_JUGADOR_EN_DESTINO: {
-                jugador = new Jugador(fila, columna);
-                CasillaDestino destino = new CasillaDestino(fila, columna);
-                destinos.add(destino);
-                return destino;
-            }
-            case CH_CAJA:
-                cajas.add(new CajaNormal(fila, columna));
-                return new EspacioVacio(fila, columna);
-            case CH_CAJA_EN_DESTINO: {
-                cajas.add(new CajaNormal(fila, columna));
-                CasillaDestino destino = new CasillaDestino(fila, columna);
-                destinos.add(destino);
-                return destino;
-            }
-            case CH_CAJA_FRAGIL:
-                cajas.add(new CajaFragil(fila, columna));
-                return new EspacioVacio(fila, columna);
-            case CH_CAJA_LLAVE:
-                cajas.add(new CajaLlave(fila, columna));
-                return new EspacioVacio(fila, columna);
-            case CH_RESBALADIZO:
-                return new TerrenoResbaladizo(fila, columna);
-            case CH_CERROJO: {
-                CasillaCerrojo cerrojo = new CasillaCerrojo(fila, columna);
-                cerrojos.add(cerrojo);
-                return cerrojo;
-            }
-            case CH_MURO_CERRADO: {
-                Muro muro = new Muro(fila, columna, false);
-                muros.add(muro);
-                return muro;
-            }
-            case CH_MURO_ABIERTO: {
-                Muro muro = new Muro(fila, columna, true);
-                muros.add(muro);
-                return muro;
-            }
-            case '1':
-            case '2':
-            case '3':
-            case '4': {
-                TipoPowerUp tipo = TipoPowerUp.values()[ch - '1'];
-                CasillaPowerUp casilla = new CasillaPowerUp(fila, columna, tipo);
-                casillasPowerUp.add(casilla);
-                return casilla;
-            }
-            default:
-                return new EspacioVacio(fila, columna);
-        }
+    Tablero(GestorEventos gestorEventos,
+            int nivel,
+            Celda[][] celdas,
+            List<Caja> cajas,
+            List<Muro> muros,
+            List<CasillaCerrojo> cerrojos,
+            List<CasillaPowerUp> casillasPowerUp,
+            List<CasillaDestino> destinos,
+            IJugador jugador) {
+        this.gestorEventos = gestorEventos;
+        this.nivel = nivel;
+        this.celdas = celdas;
+        this.filas = celdas.length;
+        this.columnas = celdas[0].length;
+        this.cajas = new ArrayList<>(cajas);
+        this.muros = new ArrayList<>(muros);
+        this.cerrojos = new ArrayList<>(cerrojos);
+        this.casillasPowerUp = new ArrayList<>(casillasPowerUp);
+        this.destinos = new ArrayList<>(destinos);
+        this.jugador = jugador;
     }
 
     // ==================================================================
@@ -446,10 +292,6 @@ public class Tablero {
 
     public int getNivel() {
         return nivel;
-    }
-
-    public void setNivel(int nivel) {
-        this.nivel = nivel;
     }
 
     public List<Caja> getCajas() {
