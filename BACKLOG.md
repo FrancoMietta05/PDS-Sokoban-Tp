@@ -54,7 +54,7 @@ Depende de **SOK-13** (los nombres de las cajas cambian con ese ticket).
 
 **Listo cuando:** las tres cajas se distinguen a simple vista y se nota cuándo están sobre destino.
 
-### SOK-04 · Conseguir los efectos de sonido · P0 · M
+### ~~SOK-04~~ · Conseguir los efectos de sonido · HECHO
 Formato `.wav` en `assets/sonidos/`. Nombres exactos que busca `ReproductorSonido`:
 `movimiento.wav` · `empuje.wav` · `caja_rota.wav` · `cerrojo.wav` · `undo.wav` · `powerup.wav` · `nivel_completado.wav` · `logro.wav`
 
@@ -217,3 +217,17 @@ Sigue pendiente de la Épica A: **SOK-04 (sonidos)**. La carpeta `assets/sonidos
 **Regresión.** `test/PruebaFoco.java` reproduce el escenario con `Robot`: clic en cada botón y después movimiento con flechas. Necesita pantalla, por eso está separada de `PruebaSokoban`.
 
 **Para la defensa.** Es un buen ejemplo de por qué en Swing se prefieren key bindings sobre `KeyListener`, y de que el bug estaba en la vista sin tocar una línea del modelo.
+
+---
+
+## Hecho el 14/11/2026 — efectos de sonido
+
+**SOK-04 cerrado.** Los 8 efectos están en `assets/sonidos/`, de los packs **Impact Sounds** e **Interface Sounds** de Kenney, los dos **CC0**. Con esto, gráficos y audio vienen del mismo autor y bajo la misma licencia: una sola línea en el informe.
+
+Los packs se distribuyen en `.ogg` y `javax.sound.sampled` no lee Vorbis, así que se convirtieron a WAV PCM 16 bits / 44100 Hz / mono con ffmpeg. El comando y la correspondencia archivo por archivo quedaron en `assets/CREDITS.txt`.
+
+Dos decisiones de ajuste: a `movimiento.wav` se le bajó el volumen a la mitad porque suena en cada paso, y para `nivel_completado.wav` se eligió el sonido más largo del pack (1,9 s) porque el primer candidato duraba 119 ms y para una victoria quedaba seco.
+
+**Prueba nueva: `test/PruebaSonidos.java`.** Abre los 8 archivos con `AudioSystem` e informa duración y formato. Existe por una trampa concreta: si alguien copia un `.ogg` a esa carpeta, el juego no se cae — ese evento queda mudo y nadie se entera hasta la demo. Esta prueba lo vuelve un error visible.
+
+Con esto la **Épica A queda cerrada** salvo SOK-05 (mostrar la resistencia de la caja frágil con el sprite en vez de un número), que es P1.

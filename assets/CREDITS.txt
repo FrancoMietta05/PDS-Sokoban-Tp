@@ -43,10 +43,25 @@ resultado se publica bajo la misma licencia.
 ASSETS SONOROS
 ==============
 
-Pendiente. La carpeta assets/sonidos/ esta vacia: el pack de Kenney usado aca
-es solo grafico. El juego funciona sin sonidos (ReproductorSonido no reproduce
-nada si el .wav no existe).
+Origen: packs "Impact Sounds" e "Interface Sounds", por Kenney Vleugels
+        https://kenney.nl/assets/impact-sounds
+        https://kenney.nl/assets/interface-sounds
+Licencia: Creative Commons Zero (CC0 1.0) - dominio publico
 
-Al incorporarlos, anotar aca el origen y la licencia de cada uno, y recordar
-que javax.sound.sampled solo lee WAV, AU y AIFF: los .ogg y .mp3 hay que
-convertirlos a WAV PCM.
+Los packs se distribuyen en .ogg y javax.sound.sampled solo lee WAV, AU y
+AIFF, asi que se convirtieron a WAV PCM 16 bits, 44100 Hz, mono, con ffmpeg:
+
+  ffmpeg -i ORIGEN.ogg -af "volume=V" -acodec pcm_s16le -ar 44100 -ac 1 DESTINO.wav
+
+Correspondencia:
+
+  movimiento.wav        <- ImpactSounds/footstep_wood_000.ogg      (volumen 0.5)
+  empuje.wav            <- ImpactSounds/impactWood_light_000.ogg   (volumen 0.8)
+  caja_rota.wav         <- ImpactSounds/impactGlass_heavy_000.ogg
+  cerrojo.wav           <- ImpactSounds/impactMetal_medium_000.ogg
+  undo.wav              <- InterfaceSounds/back_001.ogg
+  powerup.wav           <- InterfaceSounds/pluck_001.ogg
+  nivel_completado.wav  <- InterfaceSounds/select_006.ogg
+  logro.wav             <- InterfaceSounds/confirmation_002.ogg
+
+A movimiento.wav se le bajo el volumen porque suena en cada paso del jugador.

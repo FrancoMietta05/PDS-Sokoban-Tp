@@ -100,7 +100,9 @@ Los gráficos son del pack **[Sokoban de Kenney](https://kenney.nl/assets/sokoba
 
 El tile de terreno resbaladizo es obra derivada: el pack no trae hielo, así que se generó virando a azul el piso gris de Kenney. CC0 permite la modificación.
 
-**Los sonidos todavía no están.** `assets/sonidos/` está vacía. El juego funciona igual: si falta un `.wav`, ese evento no suena. Los nombres que busca están en `ReproductorSonido`.
+Los efectos de sonido son de los packs **[Impact Sounds](https://kenney.nl/assets/impact-sounds)** e **[Interface Sounds](https://kenney.nl/assets/interface-sounds)**, del mismo autor y también **CC0**. Están en `assets/sonidos/`.
+
+Los packs vienen en `.ogg` y `javax.sound.sampled` solo lee **WAV, AU y AIFF**, así que se convirtieron a WAV PCM 16 bits con ffmpeg. El comando exacto está en `CREDITS.txt`. Si agregás un sonido nuevo, convertilo: un `.ogg` en esa carpeta no rompe nada, pero ese evento queda mudo sin avisar.
 
 ## Documentación de diseño
 
