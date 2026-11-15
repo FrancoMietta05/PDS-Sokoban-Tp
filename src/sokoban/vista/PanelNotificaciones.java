@@ -1,11 +1,8 @@
 package sokoban.vista;
 
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.GridLayout;
-import javax.swing.BorderFactory;
-import javax.swing.JLabel;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import javax.swing.JPanel;
 import javax.swing.Timer;
 
@@ -15,7 +12,8 @@ import sokoban.eventos.TipoEvento;
 import sokoban.logros.Logro;
 
 /**
- * Franja donde aparecen los avisos de logro desbloqueado.
+ * Cartel que aparece unos segundos cuando se desbloquea un logro. Sin aviso no
+ * dibuja nada, asi que no tapa el fondo.
  *
  * Solo reacciona a LOGRO_DESBLOQUEADO y toma el logro del mapa de datos del
  * evento. No conoce al GestorLogros: se entera por el Observer.
@@ -24,19 +22,15 @@ public class PanelNotificaciones extends JPanel implements Observador {
 
     private static final int MS_VISIBLE = 4000;
 
-    private final JLabel lblAviso = new JLabel(" ");
+    private String aviso = null;
     private final Timer temporizador;
 
     public PanelNotificaciones() {
-        setLayout(new GridLayout(1, 1));
-        setBackground(new Color(38, 38, 46));
-        setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
-
-        lblAviso.setForeground(new Color(250, 214, 110));
-        lblAviso.setFont(lblAviso.getFont().deriveFont(Font.BOLD, 14f));
-        add(lblAviso);
-
-        temporizador = new Timer(MS_VISIBLE, e -> lblAviso.setText(" "));
+        setOpaque(false);
+        temporizador = new Timer(MS_VISIBLE, e -> {
+            aviso = null;
+            repaint();
+        });
         temporizador.setRepeats(false);
     }
 
@@ -52,13 +46,29 @@ public class PanelNotificaciones extends JPanel implements Observador {
     }
 
     public void mostrarLogro(Logro logro) {
-        lblAviso.setText("Logro desbloqueado: " + logro.getNombre() + " - " + logro.getDescripcion());
+        aviso = "LOGRO: " + logro.getNombre() + " - " + logro.getDescripcion();
         temporizador.restart();
+        repaint();
     }
 
     @Override
-    public Dimension getPreferredSize() {
-        Dimension preferida = super.getPreferredSize();
-        return new Dimension(preferida.width, Math.max(34, preferida.height));
+    protected void paintComponent(Graphics g) {
+        if (aviso == null) {
+            return;
+        }
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        int w = getWidth();
+        int h = getHeight();
+        int arco = Math.max(8, h / 2);
+        g2.setColor(Estilo.BORDE);
+        g2.fillRoundRect(0, 0, w, h, arco, arco);
+        g2.setColor(Estilo.PANEL);
+        g2.fillRoundRect(3, 3, w - 6, h - 6, arco - 4, arco - 4);
+
+        float tamano = Math.max(8f, h * 0.30f);
+        Estilo.textoCentrado(g2, aviso, arco / 2, w - arco, (h + Math.round(tamano)) / 2 - 1,
+                tamano, Estilo.ETIQUETA);
+        g2.dispose();
     }
 }

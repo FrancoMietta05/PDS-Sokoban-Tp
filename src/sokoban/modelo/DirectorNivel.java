@@ -48,7 +48,13 @@ public class DirectorNivel {
     public static final char CH_CAJA = '$';
     public static final char CH_CAJA_EN_DESTINO = '*';
     public static final char CH_CAJA_FRAGIL = 'F';
+    public static final char CH_CAJA_FRAGIL_RESISTENTE = 'G';
+    public static final char CH_CAJA_FRAGIL_MUY_RESISTENTE = 'H';
     public static final char CH_CAJA_LLAVE = 'L';
+
+    /** Resistencias de las cajas fragiles que el formato permite declarar. */
+    private static final int RESISTENCIA_RESISTENTE = 5;
+    private static final int RESISTENCIA_MUY_RESISTENTE = 8;
     public static final char CH_RESBALADIZO = '~';
     public static final char CH_CERROJO = 'c';
     public static final char CH_MURO_CERRADO = 'M';
@@ -76,6 +82,8 @@ public class DirectorNivel {
         fabricasCelda.put(CH_CAJA, vacio);
         fabricasCelda.put(CH_CAJA_EN_DESTINO, destino);
         fabricasCelda.put(CH_CAJA_FRAGIL, vacio);
+        fabricasCelda.put(CH_CAJA_FRAGIL_RESISTENTE, vacio);
+        fabricasCelda.put(CH_CAJA_FRAGIL_MUY_RESISTENTE, vacio);
         fabricasCelda.put(CH_CAJA_LLAVE, vacio);
         // '1'..'4' siguen el orden del enum TipoPowerUp.
         TipoPowerUp[] tipos = TipoPowerUp.values();
@@ -86,6 +94,8 @@ public class DirectorNivel {
         fabricasCaja.put(CH_CAJA, new FabricaCajaNormal());
         fabricasCaja.put(CH_CAJA_EN_DESTINO, new FabricaCajaNormal());
         fabricasCaja.put(CH_CAJA_FRAGIL, new FabricaCajaFragil());
+        fabricasCaja.put(CH_CAJA_FRAGIL_RESISTENTE, new FabricaCajaFragil(RESISTENCIA_RESISTENTE));
+        fabricasCaja.put(CH_CAJA_FRAGIL_MUY_RESISTENTE, new FabricaCajaFragil(RESISTENCIA_MUY_RESISTENTE));
         fabricasCaja.put(CH_CAJA_LLAVE, new FabricaCajaLlave());
     }
 

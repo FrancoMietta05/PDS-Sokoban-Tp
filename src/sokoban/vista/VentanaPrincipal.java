@@ -1,5 +1,9 @@
 package sokoban.vista;
 
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.event.WindowEvent;
+import javax.swing.JFrame;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.GridBagLayout;
@@ -44,6 +48,8 @@ public class VentanaPrincipal extends JFrame implements Observador {
     private final PanelHUD panelHUD = new PanelHUD(juego);
     private final PanelNotificaciones panelNotificaciones = new PanelNotificaciones();
     private final ReproductorSonido reproductorSonido = new ReproductorSonido();
+    private final PanelResumen panelResumen = new PanelResumen();
+    private final PanelFinal panelFinal = new PanelFinal();
 
     public VentanaPrincipal() {
         super("Sokoban - PDS");
@@ -55,20 +61,17 @@ public class VentanaPrincipal extends JFrame implements Observador {
         gestorEventos.agregarObservador(reproductorSonido);
         gestorEventos.agregarObservador(this);
 
-        JPanel superior = new JPanel(new BorderLayout());
-        superior.setBackground(new Color(38, 38, 46));
-        superior.add(panelHUD, BorderLayout.NORTH);
-        superior.add(panelNotificaciones, BorderLayout.SOUTH);
-
-        // El tablero se centra: si el HUD es mas ancho que el nivel, el
-        // tablero no se estira, queda centrado sobre el fondo.
-        JPanel centrador = new JPanel(new GridBagLayout());
-        centrador.setBackground(new Color(24, 24, 30));
-        centrador.add(panelTablero);
-
-        setLayout(new BorderLayout());
-        add(superior, BorderLayout.NORTH);
-        add(centrador, BorderLayout.CENTER);
+        // Cada componente va en una zona del fondo, en pixeles de Fondo.jpg
+        // (2752 x 1536): el tablero en el hueco del marco, el cartel del HUD
+        // colgando de las cadenas y los botones sobre los recuadros de abajo.
+        PanelFondo fondo = new PanelFondo();
+        fondo.agregar(panelTablero, 648, 366, 1464, 816);
+        fondo.agregar(panelHUD, 802, 105, 1156, 150);
+        fondo.agregarCentrado(panelHUD.getBotonDeshacer(), 404, 1361, 320, 120);
+        fondo.agregarCentrado(panelHUD.getBotonReiniciar(), 2351, 1361, 320, 120);
+        fondo.agregar(panelNotificaciones, 620, 1318, 1500, 64);
+        setContentPane(fondo);
+        setGlassPane(panelResumen);
 
         configurarTeclado();
 
@@ -134,26 +137,42 @@ public class VentanaPrincipal extends JFrame implements Observador {
     }
 
     private void mostrarResumen(EventoJuego e) {
-        StringBuilder texto = new StringBuilder();
-        texto.append("Nivel ").append(e.getNivel()).append(" completado\n\n");
-        texto.append("Movimientos: ").append(e.getDatoEntero(EventoJuego.CLAVE_MOVIMIENTOS, 0)).append('\n');
-        texto.append("Empujes: ").append(e.getDatoEntero(EventoJuego.CLAVE_EMPUJES, 0)).append('\n');
-        texto.append("Usos de deshacer: ").append(e.getDatoEntero(EventoJuego.CLAVE_UNDOS, 0)).append('\n');
-        texto.append("Puntaje: ").append(e.getDatoEntero(EventoJuego.CLAVE_PUNTAJE, 0)).append("\n\n");
-        texto.append("Logros desbloqueados: ").append(gestorLogros.logrosDesbloqueados().size())
-                .append(" de ").append(gestorLogros.getLogros().size());
+        setGlassPane(panelResumen);
+        panelResumen.mostrar(
+                e.getDatoEntero(EventoJuego.CLAVE_MOVIMIENTOS, 0),
+                e.getDatoEntero(EventoJuego.CLAVE_EMPUJES, 0),
+                e.getDatoEntero(EventoJuego.CLAVE_UNDOS, 0),
+                e.getDatoEntero(EventoJuego.CLAVE_PUNTAJE, 0),
+                gestorLogros.logrosDesbloqueados().size(),
+                gestorLogros.getLogros().size(),
+                this::pasarAlSiguienteNivel,
+                () -> {
+                    juego.reiniciarNivel();
+                    panelTablero.requestFocusInWindow();
+                });
+    }
 
-        JOptionPane.showMessageDialog(this, texto.toString(),
-                "Resumen del nivel", JOptionPane.INFORMATION_MESSAGE);
-
+    private void pasarAlSiguienteNivel() {
         if (!juego.siguienteNivel()) {
-            JOptionPane.showMessageDialog(this,
-                    "Terminaste todos los niveles disponibles.",
-                    "Fin del juego", JOptionPane.INFORMATION_MESSAGE);
+            mostrarFinal();
             return;
         }
-        pack();
-        setLocationRelativeTo(null);
         panelTablero.requestFocusInWindow();
+    }
+
+    /** Se completo el ultimo nivel: muestra la pantalla final con sus dos salidas. */
+    private void mostrarFinal() {
+        setGlassPane(panelFinal);
+        panelFinal.mostrar(
+                () -> {
+                    juego.iniciarJuego();
+                    panelTablero.requestFocusInWindow();
+                },
+                this::cerrarVentana);
+    }
+
+    /** Cierra por el mismo camino que la X de la ventana, para respetar el DefaultCloseOperation. */
+    private void cerrarVentana() {
+        dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
     }
 }

@@ -202,6 +202,21 @@ public class PruebaSokoban {
         }
         check("Builder: un nivel sin jugador no llega a ser Tablero", sinJugador);
 
+        Tablero conFragiles = new DirectorNivel().construirDesdeLineas(
+                List.of("#######", "#@FGH.#", "#######"), new TableroBuilder(eventos));
+        check("Nivel: F, G y H declaran fragiles de resistencia 3, 5 y 8",
+                conFragiles.getCajas().size() == 3
+                        && conFragiles.getCajas().get(0).getResistencia() == 3
+                        && conFragiles.getCajas().get(1).getResistencia() == 5
+                        && conFragiles.getCajas().get(2).getResistencia() == 8);
+        boolean resistenciaInvalida = false;
+        try {
+            new FabricaCajaFragil(0);
+        } catch (IllegalArgumentException e) {
+            resistenciaInvalida = true;
+        }
+        check("Factory Method: una fabrica no admite resistencia cero", resistenciaInvalida);
+
         Juego anterior = Juego.getInstance();
         Juego.reiniciarInstancia();
         check("Singleton: reiniciarInstancia permite arrancar una partida limpia",

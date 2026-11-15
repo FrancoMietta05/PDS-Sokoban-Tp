@@ -50,3 +50,10 @@ nada si el .wav no existe).
 Al incorporarlos, anotar aca el origen y la licencia de cada uno, y recordar
 que javax.sound.sampled solo lee WAV, AU y AIFF: los .ogg y .mp3 hay que
 convertirlos a WAV PCM.
+
+
+FUENTE
+======
+
+"Press Start 2P" (assets/fuentes/PressStart2P-Regular.ttf), por CodeMan38.
+Licencia: SIL Open Font License 1.1 - https://openfontlicense.org
