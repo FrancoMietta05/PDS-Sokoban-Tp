@@ -4,6 +4,18 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowEvent;
 import javax.swing.JFrame;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.GridBagLayout;
+import java.awt.event.ActionEvent;
+import javax.swing.AbstractAction;
+import javax.swing.ActionMap;
+import javax.swing.InputMap;
+import javax.swing.JComponent;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 
 import sokoban.controlador.Juego;
@@ -61,12 +73,7 @@ public class VentanaPrincipal extends JFrame implements Observador {
         setContentPane(fondo);
         setGlassPane(panelResumen);
 
-        panelTablero.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                manejarTecla(e);
-            }
-        });
+        configurarTeclado();
 
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         juego.iniciarJuego();
@@ -76,40 +83,44 @@ public class VentanaPrincipal extends JFrame implements Observador {
     }
 
     /**
-     * Traduce la tecla a una accion del controlador. El modelo nunca ve un
-     * KeyEvent.
+     * Conecta el teclado con el controlador.
+     *
+     * Se usan key bindings y no un KeyListener. Un KeyListener solo recibe
+     * teclas si su componente tiene el foco, y alcanzaba con hacer clic en
+     * "Deshacer" o "Reiniciar" para que el foco se fuera al boton y el juego
+     * dejara de responder a las flechas. WHEN_IN_FOCUSED_WINDOW hace que las
+     * teclas lleguen mientras la ventana este activa, sin importar que
+     * componente tenga el foco en ese momento.
+     *
+     * Es tambien el unico lugar donde el teclado se traduce a modelo: de aca
+     * sale una Direccion, nunca un KeyEvent. Por eso ninguna clase del modelo
+     * ni del controlador depende de Swing.
      */
-    private void manejarTecla(KeyEvent e) {
-        Direccion direccion = aDireccion(e.getKeyCode());
-        if (direccion != null) {
-            juego.manejarEntrada(direccion);
-            return;
-        }
-        switch (e.getKeyCode()) {
-            case KeyEvent.VK_Z:
-                juego.deshacerMovimiento();
-                break;
-            case KeyEvent.VK_R:
-                juego.reiniciarNivel();
-                break;
-            default:
-                break;
-        }
+    private void configurarTeclado() {
+        InputMap entrada = panelTablero.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+        ActionMap acciones = panelTablero.getActionMap();
+
+        vincular(entrada, acciones, "UP", "mover.arriba",
+                () -> juego.manejarEntrada(Direccion.ARRIBA));
+        vincular(entrada, acciones, "DOWN", "mover.abajo",
+                () -> juego.manejarEntrada(Direccion.ABAJO));
+        vincular(entrada, acciones, "LEFT", "mover.izquierda",
+                () -> juego.manejarEntrada(Direccion.IZQUIERDA));
+        vincular(entrada, acciones, "RIGHT", "mover.derecha",
+                () -> juego.manejarEntrada(Direccion.DERECHA));
+        vincular(entrada, acciones, "Z", "deshacer", juego::deshacerMovimiento);
+        vincular(entrada, acciones, "R", "reiniciar", juego::reiniciarNivel);
     }
 
-    private Direccion aDireccion(int codigo) {
-        switch (codigo) {
-            case KeyEvent.VK_UP:
-                return Direccion.ARRIBA;
-            case KeyEvent.VK_DOWN:
-                return Direccion.ABAJO;
-            case KeyEvent.VK_LEFT:
-                return Direccion.IZQUIERDA;
-            case KeyEvent.VK_RIGHT:
-                return Direccion.DERECHA;
-            default:
-                return null;
-        }
+    private void vincular(InputMap entrada, ActionMap acciones,
+                          String tecla, String nombre, Runnable accion) {
+        entrada.put(KeyStroke.getKeyStroke(tecla), nombre);
+        acciones.put(nombre, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                accion.run();
+            }
+        });
     }
 
     /**

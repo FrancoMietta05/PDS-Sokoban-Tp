@@ -62,6 +62,16 @@ java -cp out PruebaSokoban
 
 Que corra sin Swing es la demostración práctica de que el modelo no depende de la vista.
 
+Hay una segunda prueba, `PruebaFoco`, que **sí necesita pantalla**: abre la ventana y usa `Robot` para hacer clic en los botones y después mover con las flechas. Cubre el bug de foco que hacía que el teclado dejara de responder después de usar Deshacer o Reiniciar.
+
+```bash
+javac -encoding UTF-8 -cp out -d out test/PruebaFoco.java
+```
+
+```bash
+java -cp out PruebaFoco
+```
+
 ## Formato de los niveles
 
 Los niveles son archivos de texto en `niveles/nivelN.txt`, un carácter por casilla:

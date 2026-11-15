@@ -36,6 +36,11 @@ public class PanelHUD extends JPanel implements Observador {
         this.juego = juego;
         setOpaque(false);
 
+        // Los botones no toman el foco: asi el tablero lo conserva y no aparece
+        // el recuadro de foco saltando entre botones mientras se juega.
+        btnUndo.setFocusable(false);
+        btnReiniciar.setFocusable(false);
+
         btnUndo.addActionListener(e -> juego.deshacerMovimiento());
         btnReiniciar.addActionListener(e -> juego.reiniciarNivel());
 
