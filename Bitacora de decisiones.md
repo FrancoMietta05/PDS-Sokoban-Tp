@@ -239,6 +239,48 @@ Formato de cada entrada: qué se decidió, qué se descartó, y el problema conc
 
 ---
 
+### 22. El modelo deja de usar `java.awt.Point` (SOK-15)
+
+**DECISIÓN.** `Memento` guarda la posición del jugador como dos `int` (`filaJugador`, `columnaJugador`) en lugar de un `Point`. `Juego` ya no importa nada de AWT.
+
+**ALTERNATIVA DESCARTADA.** Dejar `Point` y defenderlo como "una clase de datos de dos `int` públicos, no un componente gráfico".
+
+**POR QUÉ.** La regla del MVC de este trabajo es que el modelo y el controlador no dependen de la biblioteca gráfica, y `Point` era la única excepción. Además `Point` usa `x`/`y` (columna/fila) mientras todo el resto del modelo habla de fila y columna, y la traducción ya era un lugar donde equivocarse (`posicionar(pos.y, pos.x)`). Costó cinco líneas y deja la regla sin asteriscos.
+
+**OJO EN LA DEFENSA.** Cambia el diagrama: `-posJugador: Point` pasa a `-filaJugador: int` y `-columnaJugador: int` (ver SOK-19).
+
+---
+
+### 23. La resistencia de la frágil viaja en la fábrica, no en la caja (SOK-12)
+
+**DECISIÓN.** `FabricaCajaFragil` recibe la resistencia en su constructor y `DirectorNivel` registra tres instancias: `F` (3), `G` (5) y `H` (8).
+
+**ALTERNATIVA DESCARTADA.** Un dígito al lado de la `F` en el `.txt`, o subclases `CajaFragilReforzada`.
+
+**POR QUÉ.** El dígito rompería la regla "un carácter = una casilla" del formato y obligaría a reescribir el lector. Las subclases serían clases que solo cambian un número. Con una fábrica parametrizada, sumar otra dureza es una línea en `DirectorNivel`, y ni `CajaFragil` ni el tablero se enteran de que el formato cambió: es Factory Method haciendo exactamente su trabajo.
+
+---
+
+### 24. "Partida nueva" la resuelve la vista, no `Juego` (SOK-14)
+
+**DECISIÓN.** El botón *Partida nueva* llama a `VentanaPrincipal.partidaNueva()`, que hace `gestorLogros.reiniciar()` y `juego.iniciarJuego()`. `PanelHUD` recibe esa acción como un `Runnable`.
+
+**ALTERNATIVA DESCARTADA.** Un `Juego.partidaNueva()` que reinicie los logros, o un evento `PARTIDA_NUEVA`.
+
+**POR QUÉ.** `Juego` no conoce a `GestorLogros` (decisión 13), y no tiene por qué empezar a conocerlo. Quien crea y posee al gestor de logros es la ventana, así que es la que sabe borrarlo. Un evento nuevo también funcionaría, pero solo tendría un suscriptor y sería indirección sin beneficio. El HUD recibe un `Runnable` para no depender de `GestorLogros` él tampoco.
+
+---
+
+### 25. Los niveles se prueban con un solucionador sobre el juego real (SOK-11)
+
+**DECISIÓN.** `test/Solucionador.java` hace una búsqueda en anchura usando `Juego.manejarEntrada()` para avanzar y `Juego.restaurar(Memento)` para volver atrás. Con él se demuestra que los niveles 4 a 7 no tienen solución sin su power-up: el solucionador recorre todos los estados alcanzables y, después de cada paso, le saca al jugador la cadena de decoradores.
+
+**ALTERNATIVA DESCARTADA.** Un solucionador con sus propias reglas de movimiento, o confiar en que "a ojo" el nivel no sale sin el power-up.
+
+**POR QUÉ.** Un solucionador con reglas propias prueba que *su* versión del juego no tiene solución, no la del juego real. Usando el controlador y el Memento, cualquier diferencia es imposible. Y es un buen argumento para la defensa: el Memento, pensado para el undo, sirve también para explorar el árbol de jugadas sin una sola línea de código nuevo en el modelo.
+
+---
+
 ## Estructura de paquetes
 
 ```
@@ -267,7 +309,11 @@ grep -rl "javax.swing" src/sokoban/modelo src/sokoban/eventos src/sokoban/logros
 
 No devuelve nada. Toda la batería de pruebas del modelo corre sin levantar una ventana.
 
-**El único matiz, por si lo preguntan:** `Memento` y `Juego` importan `java.awt.Point`, porque el diagrama declara `-posJugador: Point`. `Point` es una clase de datos (dos `int` públicos), no un componente gráfico, así que no ata el modelo a la interfaz — pero es la única línea del modelo que menciona `java.awt` y conviene tenerla identificada antes de que la encuentre otro. Si se prefiere el modelo 100% libre de AWT, se reemplaza por dos `int` en `Memento` y se toca el diagrama; son cinco líneas.
+**Y tampoco AWT:** hasta la decisión 22, `Memento` y `Juego` importaban `java.awt.Point`. Ya no, así que esto tampoco devuelve nada:
+
+```bash
+grep -rl "import java.awt" src/sokoban/modelo src/sokoban/eventos src/sokoban/logros src/sokoban/powerups src/sokoban/controlador
+```
 
 ---
 
@@ -290,7 +336,7 @@ No devuelve nada. Toda la batería de pruebas del modelo corre sin levantar una 
 
 - [x] Estructura de paquetes del proyecto — hecha más arriba
 - [x] Apartado de MVC: qué clases son modelo, cuáles vista, cuál el controlador, y por qué el modelo no conoce a Swing — hecho más arriba (decisión 17 + estructura de paquetes)
-- [ ] Reemplazar las figuras de color por imágenes de dominio público (`assets/imagenes/`) y cargar los `.wav` (`assets/sonidos/`) — el código ya los busca y funciona sin ellos
+- [x] Reemplazar las figuras de color por imágenes de dominio público (`assets/imagenes/`) y cargar los `.wav` (`assets/sonidos/`). Imágenes de Kenney (CC0), sonidos generados por el equipo (CC0); ver `assets/CREDITS.txt`
 - [ ] Principios SOLID y GRASP aplicados, con el ejemplo concreto de cada uno
 - [ ] Diagrama de clases final (verificar si el profe acepta draw.io o exige StarUML)
 - [ ] Capturas del juego

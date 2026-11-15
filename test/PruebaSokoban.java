@@ -1,5 +1,7 @@
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 import sokoban.controlador.Juego;
 import sokoban.eventos.EventoJuego;
@@ -28,6 +30,28 @@ import sokoban.modelo.TipoPowerUp;
 public class PruebaSokoban {
 
     static int fallas = 0;
+
+    /**
+     * Una secuencia que resuelve cada nivel (SOK-11). Un nivel nuevo sin su
+     * entrada aca hace fallar la bateria. Las saca Solucionador (BFS), asi que
+     * son las mas cortas posibles.
+     */
+    static final Map<Integer, String> SOLUCIONES = Map.of(
+            1, "LURRR",
+            2, "LURRURDDDRDRUULURRR",
+            3, "LDRRULLURRRRR",
+            4, "URRDRRRLLLULLDR",        // Fuerza
+            5, "RRLLLU",                 // Antideslizante
+            6, "DRURRRRR",               // Fantasma
+            7, "RRRRRDDLL",              // Manos de Acero
+            8, "URRDDRRRURDD");          // llave + muro + hielo + fragil
+
+    /** Niveles disenados para que no se puedan resolver sin su power-up. */
+    static final Map<Integer, TipoPowerUp> POWERUP_OBLIGATORIO = new TreeMap<>(Map.of(
+            4, TipoPowerUp.FUERZA,
+            5, TipoPowerUp.ANTIDESLIZANTE,
+            6, TipoPowerUp.FANTASMA,
+            7, TipoPowerUp.MANOS_DE_ACERO));
 
     static void check(String que, boolean ok) {
         System.out.println((ok ? "  OK   " : "  FALLA") + "  " + que);
@@ -124,7 +148,7 @@ public class PruebaSokoban {
                 juego.getJugador().getFila() == 2 && juego.getJugador().getColumna() == 8);
         mover(juego, "R");            // caja -> (2,10) destino
         check("nivel 3 resuelto", juego.estaCompletado());
-        check("no hay nivel 4", !juego.siguienteNivel());
+        check("despues del 3 viene el nivel 4", juego.siguienteNivel() && juego.getNivelActual() == 4);
 
         // ---------- Power-ups (Decorator) ----------
         System.out.println("POWER-UPS");
@@ -206,6 +230,50 @@ public class PruebaSokoban {
         Juego.reiniciarInstancia();
         check("Singleton: reiniciarInstancia permite arrancar una partida limpia",
                 Juego.getInstance() != anterior);
+
+        // ---------- SOK-14: partida nueva borra los logros ----------
+        System.out.println("PARTIDA NUEVA");
+        check("habia logros desbloqueados", !logros.logrosDesbloqueados().isEmpty());
+        logros.reiniciar();
+        check("GestorLogros.reiniciar() los borra todos", logros.logrosDesbloqueados().isEmpty());
+
+        // ---------- SOK-12: resistencia de la fragil desde el .txt ----------
+        System.out.println("RESISTENCIAS");
+        Tablero fragiles = new DirectorNivel().construirDesdeLineas(
+                List.of("#######", "#@FGH.#", "#######"), new TableroBuilder(eventos));
+        check("F arranca con resistencia 3", fragiles.cajaEn(1, 2).getResistencia() == 3);
+        check("G arranca con resistencia 5", fragiles.cajaEn(1, 3).getResistencia() == 5);
+        check("H arranca con resistencia 8", fragiles.cajaEn(1, 4).getResistencia() == 8);
+
+        // ---------- SOK-11: cada nivel tiene su solucion verificada ----------
+        // Partida limpia y sin observadores: el solucionador hace miles de
+        // movimientos y no tiene que ensuciar los logros ni el registro.
+        Juego.reiniciarInstancia();
+        Juego limpio = Juego.getInstance();
+        System.out.println("SOLVABILIDAD");
+        int nivel = 1;
+        while (limpio.existeNivel(nivel)) {
+            String solucion = SOLUCIONES.get(nivel);
+            check("nivel " + nivel + " tiene su solucion en SOLUCIONES", solucion != null);
+            if (solucion != null) {
+                limpio.cargarNivel(nivel);
+                mover(limpio, solucion);
+                check("nivel " + nivel + " se resuelve con su secuencia", limpio.estaCompletado());
+            }
+            nivel++;
+        }
+        check("el juego tiene 8 niveles", nivel - 1 == 8);
+
+        // ---------- SOK-06 a SOK-09: el power-up es obligatorio ----------
+        // El solucionador recorre TODOS los estados alcanzables sin power-ups:
+        // que devuelva null es la demostracion de que el nivel no sale sin el.
+        System.out.println("POWER-UPS OBLIGATORIOS");
+        for (Map.Entry<Integer, TipoPowerUp> e : POWERUP_OBLIGATORIO.entrySet()) {
+            check("nivel " + e.getKey() + " es irresoluble sin " + e.getValue().getNombre(),
+                    Solucionador.resolver(limpio, e.getKey(), true) == null);
+            check("nivel " + e.getKey() + " tiene solucion usando " + e.getValue().getNombre(),
+                    Solucionador.resolver(limpio, e.getKey(), false) != null);
+        }
 
         System.out.println();
         System.out.println(fallas == 0 ? "TODO OK" : (fallas + " FALLAS"));

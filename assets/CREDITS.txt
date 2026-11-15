@@ -43,10 +43,25 @@ resultado se publica bajo la misma licencia.
 ASSETS SONOROS
 ==============
 
-Pendiente. La carpeta assets/sonidos/ esta vacia: el pack de Kenney usado aca
-es solo grafico. El juego funciona sin sonidos (ReproductorSonido no reproduce
-nada si el .wav no existe).
+Origen: obra propia del equipo, generada por sintesis con
+        herramientas/GeneradorSonidos.java (no se descargo ningun audio).
+Licencia: Creative Commons Zero (CC0 1.0) - dominio publico, igual que los
+          graficos.
 
-Al incorporarlos, anotar aca el origen y la licencia de cada uno, y recordar
-que javax.sound.sampled solo lee WAV, AU y AIFF: los .ogg y .mp3 hay que
-convertirlos a WAV PCM.
+Cada sonido se calcula sumando ondas (seno y cuadrada suavizada) y ruido con
+envolventes. El ruido usa semilla fija, asi que correr el generador de nuevo
+produce exactamente los mismos archivos. Formato: WAV PCM 16 bits, mono,
+22050 Hz (javax.sound.sampled lo lee sin conversion).
+
+  movimiento.wav          golpecito grave, 45 ms, volumen bajo (suena en cada paso)
+  empuje.wav              arrastre: ruido filtrado + tono grave que cae, 140 ms
+  caja_rota.wav           crujido de ruido con chasquidos, 350 ms
+  cerrojo.wav             dos clics metalicos + tono ascendente, 450 ms
+  undo.wav                barrido descendente ("rebobinar"), 220 ms
+  powerup.wav             arpegio ascendente do-mi-sol-do, 390 ms
+  nivel_completado.wav    fanfarria en mayor que termina en acorde, 1,1 s
+  logro.wav               dos campanadas, 600 ms
+
+Para regenerarlos, desde la raiz del proyecto:
+  javac -d out herramientas/GeneradorSonidos.java
+  java -cp out GeneradorSonidos

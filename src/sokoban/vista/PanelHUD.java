@@ -32,8 +32,14 @@ public class PanelHUD extends JPanel implements Observador {
     private final JLabel lblPowerUps = new JLabel();
     private final JButton btnUndo = new JButton("Deshacer (5)");
     private final JButton btnReiniciar = new JButton("Reiniciar nivel");
+    private final JButton btnPartidaNueva = new JButton("Partida nueva");
 
-    public PanelHUD(Juego juego) {
+    /**
+     * @param partidaNueva que hacer al pedir una partida nueva. Lo resuelve
+     *        VentanaPrincipal, que es la que conoce a GestorLogros: el HUD no
+     *        necesita saber que los logros se borran.
+     */
+    public PanelHUD(Juego juego, Runnable partidaNueva) {
         this.juego = juego;
         setLayout(new FlowLayout(FlowLayout.LEFT, 14, 8));
         setBackground(new Color(38, 38, 46));
@@ -48,14 +54,17 @@ public class PanelHUD extends JPanel implements Observador {
         add(Box.createHorizontalStrut(12));
         add(btnUndo);
         add(btnReiniciar);
+        add(btnPartidaNueva);
 
         // Los botones no toman el foco: asi el tablero lo conserva y no aparece
         // el recuadro de foco saltando entre botones mientras se juega.
         btnUndo.setFocusable(false);
         btnReiniciar.setFocusable(false);
+        btnPartidaNueva.setFocusable(false);
 
         btnUndo.addActionListener(e -> juego.deshacerMovimiento());
         btnReiniciar.addActionListener(e -> juego.reiniciarNivel());
+        btnPartidaNueva.addActionListener(e -> partidaNueva.run());
 
         refrescar();
     }

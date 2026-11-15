@@ -30,7 +30,24 @@ Hay que ejecutar **desde la raíz del proyecto**, porque los niveles se leen de 
 | `Z` | Deshacer (retrocede 5 movimientos) |
 | `R` | Reiniciar el nivel |
 
-También están los botones **Deshacer** y **Reiniciar nivel** en el HUD.
+También están los botones **Deshacer**, **Reiniciar nivel** y **Partida nueva** en el HUD. *Partida nueva* vuelve al nivel 1 y borra los logros y el puntaje acumulado. Al terminar el último nivel se muestra el puntaje total y los logros, con la opción de empezar de nuevo o cerrar.
+
+## Niveles
+
+Son 8, y cada uno presenta una mecánica nueva:
+
+| Nivel | Qué introduce |
+|---|---|
+| 1 | Empujar cajas |
+| 2 | Caja llave, cerrojo y muro |
+| 3 | Caja frágil y terreno resbaladizo |
+| 4 | **Fuerza**: dos cajas en fila que hay que empujar juntas |
+| 5 | **Antideslizante**: hay que frenar sobre el hielo para empujar |
+| 6 | **Fantasma**: la caja está en una sala cerrada |
+| 7 | **Manos de Acero**: una caja frágil reforzada (`H`) tapa el pasillo y hay que romperla |
+| 8 | Combinación: llave, muro, hielo y frágil |
+
+Los niveles 4 a 7 **no se pueden resolver sin su power-up**, y lo demuestra la batería de pruebas (ver abajo).
 
 ## Reglas implementadas
 
@@ -50,10 +67,12 @@ También están los botones **Deshacer** y **Reiniciar nivel** en el HUD.
 
 ## Pruebas
 
-Hay una batería de pruebas de humo que corre **sin interfaz gráfica**: resuelve los tres niveles, verifica las reglas de empuje, rotura, cerrojos y deslizamiento, y prueba el undo y los power-ups.
+Hay una batería de pruebas de humo que corre **sin interfaz gráfica**: verifica las reglas de empuje, rotura, cerrojos y deslizamiento, prueba el undo y los power-ups, y resuelve **cada nivel** con su secuencia de solución. Si se agrega un nivel sin cargar su solución en `PruebaSokoban.SOLUCIONES`, la batería falla.
+
+Para los niveles de power-up usa `test/Solucionador.java`, una búsqueda en anchura sobre el juego real: recorre todos los estados alcanzables y, sacándole al jugador los power-ups después de cada paso, comprueba que no exista ninguna solución sin ellos. No reimplementa reglas: cada paso lo resuelve `Juego.manejarEntrada()` y para volver atrás usa el propio `Memento`.
 
 ```bash
-javac -encoding UTF-8 -cp out -d out test/PruebaSokoban.java
+javac -encoding UTF-8 -cp out -d out test/Solucionador.java test/PruebaSokoban.java
 ```
 
 ```bash
@@ -85,14 +104,16 @@ Los niveles son archivos de texto en `niveles/nivelN.txt`, un carácter por casi
 | `+` | Jugador sobre destino |
 | `$` | Caja normal |
 | `*` | Caja normal sobre destino |
-| `F` | Caja frágil |
+| `F` | Caja frágil (resistencia 3) |
+| `G` | Caja frágil reforzada (resistencia 5) |
+| `H` | Caja frágil dura (resistencia 8) |
 | `L` | Caja llave |
 | `~` | Terreno resbaladizo |
 | `c` | Casillero cerrojo |
 | `M` / `m` | Muro cerrado / abierto |
 | `1` `2` `3` `4` | Power-up: Fuerza, Antideslizante, Fantasma, Manos de Acero |
 
-Para agregar un nivel alcanza con crear `niveles/nivel4.txt`: el juego lo detecta solo.
+Para agregar un nivel alcanza con crear `niveles/nivel9.txt`: el juego lo detecta solo. Después hay que sumar su solución a `PruebaSokoban.SOLUCIONES`; `Solucionador.resolver(juego, 9, false)` la calcula.
 
 ## Assets
 
@@ -100,7 +121,7 @@ Los gráficos son del pack **[Sokoban de Kenney](https://kenney.nl/assets/sokoba
 
 El tile de terreno resbaladizo es obra derivada: el pack no trae hielo, así que se generó virando a azul el piso gris de Kenney. CC0 permite la modificación.
 
-**Los sonidos todavía no están.** `assets/sonidos/` está vacía. El juego funciona igual: si falta un `.wav`, ese evento no suena. Los nombres que busca están en `ReproductorSonido`.
+Los **sonidos** son obra propia, generados por síntesis con [herramientas/GeneradorSonidos.java](herramientas/GeneradorSonidos.java), y se publican también como CC0. No se descargó ningún audio. El detalle de cada uno está en `CREDITS.txt`. Si falta un `.wav`, ese evento simplemente no suena.
 
 ## Documentación de diseño
 

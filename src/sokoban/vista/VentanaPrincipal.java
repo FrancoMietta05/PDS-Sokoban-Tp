@@ -41,9 +41,12 @@ public class VentanaPrincipal extends JFrame implements Observador {
     private final GestorLogros gestorLogros = new GestorLogros(gestorEventos);
 
     private final PanelTablero panelTablero = new PanelTablero(juego);
-    private final PanelHUD panelHUD = new PanelHUD(juego);
+    private final PanelHUD panelHUD = new PanelHUD(juego, this::partidaNueva);
     private final PanelNotificaciones panelNotificaciones = new PanelNotificaciones();
     private final ReproductorSonido reproductorSonido = new ReproductorSonido();
+
+    /** Suma de los puntajes de los niveles completados en esta partida. */
+    private int puntajeTotal;
 
     public VentanaPrincipal() {
         super("Sokoban - PDS");
@@ -134,6 +137,7 @@ public class VentanaPrincipal extends JFrame implements Observador {
     }
 
     private void mostrarResumen(EventoJuego e) {
+        puntajeTotal += e.getDatoEntero(EventoJuego.CLAVE_PUNTAJE, 0);
         StringBuilder texto = new StringBuilder();
         texto.append("Nivel ").append(e.getNivel()).append(" completado\n\n");
         texto.append("Movimientos: ").append(e.getDatoEntero(EventoJuego.CLAVE_MOVIMIENTOS, 0)).append('\n');
@@ -147,11 +151,47 @@ public class VentanaPrincipal extends JFrame implements Observador {
                 "Resumen del nivel", JOptionPane.INFORMATION_MESSAGE);
 
         if (!juego.siguienteNivel()) {
-            JOptionPane.showMessageDialog(this,
-                    "Terminaste todos los niveles disponibles.",
-                    "Fin del juego", JOptionPane.INFORMATION_MESSAGE);
+            mostrarFinDelJuego();
             return;
         }
+        reacomodar();
+    }
+
+    /**
+     * Fin del juego: total acumulado de la partida y la opcion de empezar de
+     * nuevo o cerrar, en vez de quedar congelado sobre el ultimo tablero.
+     */
+    private void mostrarFinDelJuego() {
+        String texto = "Terminaste los " + juego.getNivelActual() + " niveles.\n\n"
+                + "Puntaje total: " + puntajeTotal + "\n"
+                + "Logros: " + gestorLogros.logrosDesbloqueados().size()
+                + " de " + gestorLogros.getLogros().size();
+        Object[] opciones = {"Partida nueva", "Cerrar"};
+        int eleccion = JOptionPane.showOptionDialog(this, texto, "Fin del juego",
+                JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE,
+                null, opciones, opciones[0]);
+        if (eleccion == 0) {
+            partidaNueva();
+        } else {
+            dispose();
+            System.exit(0);
+        }
+    }
+
+    /**
+     * Arranca de cero: borra los logros (GestorLogros.reiniciar, SOK-14) y el
+     * puntaje acumulado, y vuelve al nivel 1. Lo resuelve la ventana porque es
+     * la duena de GestorLogros; Juego no conoce a los logros (decision 13).
+     */
+    private void partidaNueva() {
+        gestorLogros.reiniciar();
+        puntajeTotal = 0;
+        juego.iniciarJuego();
+        reacomodar();
+    }
+
+    /** Cada nivel tiene otro tamano: la ventana se ajusta y el tablero recupera el foco. */
+    private void reacomodar() {
         pack();
         setLocationRelativeTo(null);
         panelTablero.requestFocusInWindow();
