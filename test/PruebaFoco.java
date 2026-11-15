@@ -1,7 +1,15 @@
-import java.awt.*;
+import java.awt.Component;
+import java.awt.Container;
+import java.awt.KeyboardFocusManager;
+import java.awt.Point;
+import java.awt.Robot;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
-import javax.swing.*;
+import javax.swing.JButton;
+import javax.swing.SwingUtilities;
+
+import sokoban.controlador.Juego;
+import sokoban.vista.PanelHUD;
 import sokoban.vista.VentanaPrincipal;
 
 /**
@@ -9,80 +17,99 @@ import sokoban.vista.VentanaPrincipal;
  *
  * El KeyListener original dejaba de recibir teclas en cuanto se hacia clic en
  * un boton del HUD: el foco se iba al boton y el juego no respondia mas a las
- * flechas. Se arreglo con key bindings (WHEN_IN_FOCUSED_WINDOW).
+ * flechas. Se arreglo con key bindings (WHEN_IN_FOCUSED_WINDOW) y dejando los
+ * botones del HUD sin foco.
  *
  * A diferencia de PruebaSokoban, esta necesita pantalla: usa Robot para
  * clickear y teclear de verdad sobre la ventana.
+ *
+ * Los contadores se leen del Juego, no de la interfaz. Antes se buscaba un
+ * JLabel del HUD por su texto, y la prueba se rompio sola cuando el HUD paso
+ * a dibujar los valores con drawString. Lo que esta prueba vigila es que la
+ * tecla llegue al controlador; como la vista muestre el numero es otro asunto.
  */
 public class PruebaFoco {
-    static VentanaPrincipal v;
+
+    static VentanaPrincipal ventana;
+    static Juego juego;
     static int fallas = 0;
 
-    static void check(String q, boolean ok) {
-        System.out.println((ok ? "  OK   " : "  FALLA") + "  " + q);
+    static void check(String que, boolean ok) {
+        System.out.println((ok ? "  OK   " : "  FALLA") + "  " + que);
         if (!ok) fallas++;
     }
 
-    static JButton boton(Container c, String texto) {
+    /**
+     * Ubica el PanelHUD en el arbol de componentes y le pide sus botones por
+     * su API publica. Buscarlos por texto no sirve: BotonImagen dibuja su
+     * etiqueta por su cuenta y getText() devuelve vacio.
+     */
+    static PanelHUD buscarHud(Container c) {
         for (Component comp : c.getComponents()) {
-            if (comp instanceof JButton && ((JButton) comp).getText().contains(texto)) return (JButton) comp;
-            if (comp instanceof Container) { JButton r = boton((Container) comp, texto); if (r != null) return r; }
-        }
-        return null;
-    }
-
-    static JLabel label(Container c, String texto) {
-        for (Component comp : c.getComponents()) {
-            if (comp instanceof JLabel && ((JLabel) comp).getText().startsWith(texto)) return (JLabel) comp;
-            if (comp instanceof Container) { JLabel r = label((Container) comp, texto); if (r != null) return r; }
+            if (comp instanceof PanelHUD) {
+                return (PanelHUD) comp;
+            }
+            if (comp instanceof Container) {
+                PanelHUD r = buscarHud((Container) comp);
+                if (r != null) {
+                    return r;
+                }
+            }
         }
         return null;
     }
 
     static void clic(Robot r, JButton b) throws Exception {
         Point p = b.getLocationOnScreen();
-        r.mouseMove(p.x + b.getWidth()/2, p.y + b.getHeight()/2);
+        r.mouseMove(p.x + b.getWidth() / 2, p.y + b.getHeight() / 2);
         r.mousePress(InputEvent.BUTTON1_DOWN_MASK);
         r.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
         Thread.sleep(400);
     }
 
     static void tecla(Robot r, int code) throws Exception {
-        r.keyPress(code); r.keyRelease(code); Thread.sleep(250);
-    }
-
-    static int movimientos() {
-        JLabel l = label(v, "Movimientos");
-        return Integer.parseInt(l.getText().replaceAll("[^0-9]+", ""));
+        r.keyPress(code);
+        r.keyRelease(code);
+        Thread.sleep(250);
     }
 
     public static void main(String[] args) throws Exception {
-        SwingUtilities.invokeAndWait(() -> { v = new VentanaPrincipal(); v.setVisible(true); });
+        Juego.reiniciarInstancia();
+        SwingUtilities.invokeAndWait(() -> {
+            ventana = new VentanaPrincipal();
+            ventana.setVisible(true);
+        });
+        juego = Juego.getInstance();
         Thread.sleep(1000);
         Robot r = new Robot();
 
         tecla(r, KeyEvent.VK_LEFT);
-        check("se mueve con el teclado al arrancar", movimientos() == 1);
+        check("se mueve con el teclado al arrancar", juego.getMovimientos() == 1);
 
-        JButton reiniciar = boton(v, "Reiniciar");
+        PanelHUD hud = buscarHud(ventana);
+        check("se encontro el PanelHUD en la ventana", hud != null);
+        JButton reiniciar = hud.getBotonReiniciar();
         clic(r, reiniciar);
-        check("reiniciar puso los movimientos en 0", movimientos() == 0);
+        check("reiniciar puso los movimientos en cero", juego.getMovimientos() == 0);
         tecla(r, KeyEvent.VK_LEFT);
-        check("SE MUEVE DESPUES DE REINICIAR", movimientos() == 1);
+        check("SE MUEVE DESPUES DE REINICIAR", juego.getMovimientos() == 1);
 
         tecla(r, KeyEvent.VK_UP);
         tecla(r, KeyEvent.VK_RIGHT);
-        int antes = movimientos();
-        JButton undo = boton(v, "Deshacer");
+        int antes = juego.getMovimientos();
+        JButton undo = hud.getBotonDeshacer();
         clic(r, undo);
         tecla(r, KeyEvent.VK_LEFT);
-        check("SE MUEVE DESPUES DE DESHACER", movimientos() != antes);
+        check("SE MUEVE DESPUES DE DESHACER", juego.getMovimientos() != antes);
 
+        check("los botones del HUD no roban el foco",
+                !reiniciar.isFocusable() && !undo.isFocusable());
         check("el foco sigue en el tablero", String.valueOf(
                 KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner())
                 .contains("PanelTablero"));
 
-        System.out.println(fallas == 0 ? "\nTODO OK" : "\n" + fallas + " FALLAS");
+        System.out.println();
+        System.out.println(fallas == 0 ? "TODO OK" : fallas + " FALLAS");
         System.exit(fallas == 0 ? 0 : 1);
     }
 }

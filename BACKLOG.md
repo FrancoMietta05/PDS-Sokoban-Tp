@@ -54,7 +54,7 @@ Depende de **SOK-13** (los nombres de las cajas cambian con ese ticket).
 
 **Listo cuando:** las tres cajas se distinguen a simple vista y se nota cuándo están sobre destino.
 
-### SOK-04 · Conseguir los efectos de sonido · P0 · M
+### ~~SOK-04~~ · Conseguir los efectos de sonido · HECHO
 Formato `.wav` en `assets/sonidos/`. Nombres exactos que busca `ReproductorSonido`:
 `movimiento.wav` · `empuje.wav` · `caja_rota.wav` · `cerrojo.wav` · `undo.wav` · `powerup.wav` · `nivel_completado.wav` · `logro.wav`
 
@@ -217,3 +217,41 @@ Sigue pendiente de la Épica A: **SOK-04 (sonidos)**. La carpeta `assets/sonidos
 **Regresión.** `test/PruebaFoco.java` reproduce el escenario con `Robot`: clic en cada botón y después movimiento con flechas. Necesita pantalla, por eso está separada de `PruebaSokoban`.
 
 **Para la defensa.** Es un buen ejemplo de por qué en Swing se prefieren key bindings sobre `KeyListener`, y de que el bug estaba en la vista sin tocar una línea del modelo.
+
+---
+
+## Hecho el 14/11/2026 — efectos de sonido
+
+**SOK-04 cerrado.** Los 8 efectos están en `assets/sonidos/`, de los packs **Impact Sounds** e **Interface Sounds** de Kenney, los dos **CC0**. Con esto, gráficos y audio vienen del mismo autor y bajo la misma licencia: una sola línea en el informe.
+
+Los packs se distribuyen en `.ogg` y `javax.sound.sampled` no lee Vorbis, así que se convirtieron a WAV PCM 16 bits / 44100 Hz / mono con ffmpeg. El comando y la correspondencia archivo por archivo quedaron en `assets/CREDITS.txt`.
+
+Dos decisiones de ajuste: a `movimiento.wav` se le bajó el volumen a la mitad porque suena en cada paso, y para `nivel_completado.wav` se eligió el sonido más largo del pack (1,9 s) porque el primer candidato duraba 119 ms y para una victoria quedaba seco.
+
+**Prueba nueva: `test/PruebaSonidos.java`.** Abre los 8 archivos con `AudioSystem` e informa duración y formato. Existe por una trampa concreta: si alguien copia un `.ogg` a esa carpeta, el juego no se cae — ese evento queda mudo y nadie se entera hasta la demo. Esta prueba lo vuelve un error visible.
+
+Con esto la **Épica A queda cerrada** salvo SOK-05 (mostrar la resistencia de la caja frágil con el sprite en vez de un número), que es P1.
+
+---
+
+## Hecho el 15/11/2026 — pruebas reparadas tras el merge
+
+Al integrar la rama de los patrones, `PruebaSokoban` fallaba 10 checks y reventaba, y `PruebaFoco` no arrancaba. Se verificó extrayendo `origin/main` a una carpeta aparte: **ya estaban rotas en main**, el merge no las rompió. En los dos casos lo desactualizado era la prueba, no el juego.
+
+**`PruebaSokoban`.** Los niveles se rehicieron (ahora traen power-ups, cerrojos, muros y hielo) pero las secuencias de solución eran las de los niveles viejos. Se resolvieron los tres niveles nuevos y se verificó cada solución contra el motor real:
+
+| Nivel | Movimientos | Empujes | Qué ejercita |
+|---|---|---|---|
+| 1 | 62 | 29 | 3 cajas a 3 destinos |
+| 2 | 48 | 18 | caja llave → cerrojo → muro, frágil |
+| 3 | 47 | 23 | cerrojo, muro, deslizamiento en hielo, frágil |
+
+Las soluciones quedaron como constantes `SOLUCION_1/2/3` al principio del archivo, con la advertencia de que dependen de los `.txt` **a propósito**: su trabajo es garantizar que los niveles entregados son resolubles.
+
+**Pruebas de regla desacopladas de los niveles.** Las de caja frágil pasaron a construir su propio tablero de 3×5 con `DirectorNivel` + `TableroBuilder`. Vivían pegadas a un nivel, y las frágiles de los niveles nuevos quedaron detrás de un muro. Una prueba de regla no debería romperse porque alguien reacomodó un nivel.
+
+**`PruebaFoco`.** Buscaba un `JLabel` del HUD por su texto para leer los movimientos, y el HUD nuevo los dibuja con `drawString`. Ahora los lee del `Juego`, que es lo que la prueba realmente vigila: que la tecla llegue al controlador. Cómo la vista muestre el número es otro asunto. Los botones tampoco se buscan por texto —`BotonImagen` pinta su etiqueta y `getText()` viene vacío— sino pidiéndoselos al `PanelHUD` por su API pública.
+
+**Estado: 65 checks, todos en verde.**
+
+Nota: el compañero ya resolvió **SOK-12** por su cuenta — `F`, `G` y `H` declaran frágiles de resistencia 3, 5 y 8.
