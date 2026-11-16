@@ -1,6 +1,5 @@
 package sokoban.modelo.memento;
 
-import java.awt.Point;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,10 +21,14 @@ import sokoban.powerups.EstadoPowerUp;
  *
  * Las tres ultimas listas son adiciones respecto del diagrama: sin ellas el
  * undo reponia las cajas pero dejaba el resto del tablero adelantado.
+ *
+ * La posicion del jugador se guarda como dos int (fila y columna) y no como
+ * java.awt.Point, asi el modelo no importa nada de AWT (SOK-15).
  */
 public final class Memento {
 
-    private final Point posJugador;
+    private final int filaJugador;
+    private final int columnaJugador;
     private final int movimientos;
     private final int empujes;
     private final List<EstadoCaja> estadoCajas;
@@ -34,7 +37,8 @@ public final class Memento {
     private final List<Boolean> powerUpsRecogidos;
     private final List<EstadoPowerUp> powerUpsActivos;
 
-    public Memento(Point posJugador,
+    public Memento(int filaJugador,
+                   int columnaJugador,
                    int movimientos,
                    int empujes,
                    List<EstadoCaja> estadoCajas,
@@ -42,7 +46,8 @@ public final class Memento {
                    List<Boolean> cerrojosActivados,
                    List<Boolean> powerUpsRecogidos,
                    List<EstadoPowerUp> powerUpsActivos) {
-        this.posJugador = new Point(posJugador);
+        this.filaJugador = filaJugador;
+        this.columnaJugador = columnaJugador;
         this.movimientos = movimientos;
         this.empujes = empujes;
         this.estadoCajas = List.copyOf(estadoCajas);
@@ -52,8 +57,12 @@ public final class Memento {
         this.powerUpsActivos = new ArrayList<>(powerUpsActivos);
     }
 
-    public Point getPosJugador() {
-        return new Point(posJugador);
+    public int getFilaJugador() {
+        return filaJugador;
+    }
+
+    public int getColumnaJugador() {
+        return columnaJugador;
     }
 
     public int getMovimientos() {

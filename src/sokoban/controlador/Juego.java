@@ -1,6 +1,5 @@
 package sokoban.controlador;
 
-import java.awt.Point;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -207,7 +206,8 @@ public class Juego {
      */
     public Memento crearMemento() {
         return new Memento(
-                new Point(jugador.getColumna(), jugador.getFila()),
+                jugador.getFila(),
+                jugador.getColumna(),
                 jugador.getMovimientos(),
                 jugador.getEmpujes(),
                 tableroActual.capturarCajas(),
@@ -229,8 +229,7 @@ public class Juego {
         jugador = gestorPowerUps.restaurar(memento.getPowerUpsActivos(), jugador);
         tableroActual.setJugador(jugador);
 
-        Point pos = memento.getPosJugador();
-        jugador.posicionar(pos.y, pos.x);
+        jugador.posicionar(memento.getFilaJugador(), memento.getColumnaJugador());
         jugador.restaurarContadores(memento.getMovimientos(), memento.getEmpujes());
     }
 

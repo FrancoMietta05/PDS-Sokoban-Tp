@@ -70,27 +70,27 @@ Hoy el número de resistencia se dibuja como texto arriba de la caja. Con sprite
 
 > **El problema de fondo:** de los 4 power-ups, solo Fuerza aparece en un nivel (`nivel3.txt`), y el nivel se resuelve sin usarlo. Fantasma, Antideslizante y Manos de Acero **no se pueden conseguir jugando**. Una de las dos funcionalidades adicionales no se puede demostrar.
 
-### SOK-06 · Nivel que obligue a usar Fuerza · P0 · M
+### ~~SOK-06~~ · Nivel que obligue a usar Fuerza · HECHO
 Dos cajas en fila que haya que empujar juntas. Sin el power-up el nivel no sale.
 **Listo cuando:** el nivel es irresoluble sin agarrar el `1`, y hay una prueba en `PruebaSokoban` que lo resuelve.
 
-### SOK-07 · Nivel que obligue a usar Fantasma · P0 · M
+### ~~SOK-07~~ · Nivel que obligue a usar Fantasma · HECHO
 Una pared que haya que atravesar para llegar a una zona encerrada. Recordar que Fantasma tiene 3 usos: el nivel tiene que ser resoluble con 3 atravesadas o menos.
 **Listo cuando:** ídem SOK-06 con el `3`.
 
-### SOK-08 · Nivel que obligue a usar Antideslizante · P0 · M
+### ~~SOK-08~~ · Nivel que obligue a usar Antideslizante · HECHO
 Una zona de hielo donde el jugador, resbalando, no pueda posicionarse para empujar.
 **Listo cuando:** ídem SOK-06 con el `2`.
 
-### SOK-09 · Nivel que obligue a usar Manos de Acero · P0 · M
+### ~~SOK-09~~ · Nivel que obligue a usar Manos de Acero · HECHO
 Una caja frágil que haya que romper a propósito para despejar el paso. **Depende de SOK-12**: hoy toda frágil tiene resistencia 3 y no se puede declarar una más resistente desde el `.txt`.
 **Listo cuando:** ídem SOK-06 con el `4`.
 
-### SOK-10 · Llevar el juego a 8 niveles con dificultad progresiva · P1 · L
+### ~~SOK-10~~ · Llevar el juego a 8 niveles con dificultad progresiva · HECHO
 Hoy hay 3. Ordenarlos para que cada mecánica se introduzca de a una: empuje → frágil → llave/cerrojo → hielo → power-ups → combinaciones.
 **Listo cuando:** `niveles/nivel1.txt` … `nivel8.txt`, todos resueltos por una prueba.
 
-### SOK-11 · Prueba de solvabilidad para cada nivel · P1 · M
+### ~~SOK-11~~ · Prueba de solvabilidad para cada nivel · HECHO
 Extender `PruebaSokoban` para que cada nivel nuevo tenga su secuencia de solución verificada.
 **Listo cuando:** agregar un nivel sin su prueba hace fallar la batería.
 **Por qué importa:** un nivel irresoluble en la demo frente al profesor es el peor escenario posible.
@@ -99,7 +99,7 @@ Extender `PruebaSokoban` para que cada nivel nuevo tenga su secuencia de soluci�
 
 ## Épica C — Deuda técnica
 
-### SOK-12 · Permitir declarar la resistencia de una caja frágil en el `.txt` · P1 · S
+### ~~SOK-12~~ · Permitir declarar la resistencia de una caja frágil en el `.txt` · HECHO
 `CajaFragil` ya tiene constructor con resistencia, pero `Tablero.interpretar()` siempre usa el de 3 por defecto. Propuesta: que `F` siga siendo 3 y agregar `G` (5) y `H` (8), o un dígito al lado.
 **Listo cuando:** un nivel puede tener frágiles de distinta resistencia. **Bloquea SOK-09.**
 
@@ -107,15 +107,15 @@ Extender `PruebaSokoban` para que cada nivel nuevo tenga su secuencia de soluci�
 `PanelTablero` arma el nombre del archivo con `caja_ + getSimbolo()`, o sea busca `caja_$.png`, `caja_F.png`, `caja_L.png`. Un `$` en un nombre de archivo es un problema esperando.
 **Listo cuando:** la clave sale de un método con nombre propio (`caja_normal`, `caja_fragil`, `caja_llave`) y no del símbolo del `.txt`. **Bloquea SOK-03.**
 
-### SOK-14 · `GestorLogros.reiniciar()` es código muerto · P1 · S
+### ~~SOK-14~~ · `GestorLogros.reiniciar()` es código muerto · HECHO
 El método existe y nadie lo llama: no hay forma de empezar una partida nueva. Dos salidas: agregar un botón "Partida nueva" que lo use, o borrarlo.
 **Listo cuando:** o se usa, o no está. Código muerto en la entrega es una pregunta regalada en la defensa.
 
-### SOK-15 · Decidir qué hacer con `java.awt.Point` · P1 · S
+### ~~SOK-15~~ · Decidir qué hacer con `java.awt.Point` · HECHO
 `Memento` y `Juego` lo importan porque el diagrama declara `-posJugador: Point`. Es la única mención a AWT en el modelo. Dejarlo y saber defenderlo, o reemplazarlo por dos `int` (5 líneas) y tocar el diagrama.
 **Listo cuando:** está decidido y, si se cambia, el diagrama acompaña.
 
-### SOK-16 · Pantalla de fin de juego · P2 · S
+### ~~SOK-16~~ · Pantalla de fin de juego · HECHO
 Al terminar el último nivel aparece un diálogo y el juego queda congelado en el tablero resuelto, sin salida.
 **Listo cuando:** se muestra el total acumulado (puntaje, logros) y se puede empezar de nuevo o cerrar.
 
@@ -255,3 +255,17 @@ Las soluciones quedaron como constantes `SOLUCION_1/2/3` al principio del archiv
 **Estado: 65 checks, todos en verde.**
 
 Nota: el compañero ya resolvió **SOK-12** por su cuenta — `F`, `G` y `H` declaran frágiles de resistencia 3, 5 y 8.
+
+---
+
+## Hecho el 16/11/2026: niveles con power-ups obligatorios y deuda técnica
+
+- **SOK-06 a SOK-09**: niveles 4 (Fuerza), 5 (Antideslizante), 6 (Fantasma) y 7 (Manos de Acero, con una frágil `H` que tapa el pasillo). Cada uno es **irresoluble sin su power-up**, y lo demuestra la batería.
+- **SOK-10**: 8 niveles; el 8 combina llave, muro, hielo y frágil. **Ojo con la dificultad:** los niveles 4 a 8 son chicos, pensados como demostración de cada power-up, y los 1 a 3 (rehechos en `main`) son más largos. La progresión no es creciente: conviene decidir si se reordenan o se agrandan.
+- **SOK-11**: `PruebaSokoban.SOLUCIONES` tiene una secuencia por nivel (las de los niveles 1 a 3 son las `SOLUCION_1/2/3` que ya estaban), y un nivel sin la suya hace fallar la batería. `test/Solucionador.java` hace una búsqueda en anchura sobre `Juego` y el `Memento` (decisión 25 de la bitácora) y prueba que los niveles 4 a 7 no salen sin su power-up.
+- **SOK-14**: la salida *Volver a iniciar* de la pantalla final ahora llama a `GestorLogros.reiniciar()` antes de volver al nivel 1. Antes, una partida nueva arrastraba los logros de la anterior y el método seguía muerto (decisión 24).
+- **SOK-15**: `Point` reemplazado por dos `int` en `Memento` (decisión 22). **Falta reflejarlo en el diagrama (SOK-19):** `-posJugador: Point` pasa a `-filaJugador: int` y `-columnaJugador: int`.
+- **`PruebaFoco` inestable:** fallaba de vez en cuando porque `Robot` no le manda las teclas a nuestra ventana, sino a la que esté al frente en Windows. Si el usuario estaba usando otra aplicación, las flechas iban a parar ahí. Se reprodujo a propósito con otra ventana que roba el foco al arrancar (falla 3 de 3). Ahora la prueba, antes de cada tecla, activa su ventana con un clic en la barra de título si hace falta. Se eligió la barra de título y no el tablero porque clickear el tablero le devolvería el foco y escondería el bug que la prueba vigila. Con el bug original reintroducido, la prueba sigue fallando donde corresponde.
+- **`INFORME.md`**: primer borrador del informe técnico (SOK-21). Lo pendiente está marcado con `[COMPLETAR]`.
+
+**Estado: `PruebaSokoban` con 91 checks, todos en verde.**

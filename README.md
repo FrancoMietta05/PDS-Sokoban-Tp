@@ -30,7 +30,24 @@ Hay que ejecutar **desde la raíz del proyecto**, porque los niveles se leen de 
 | `Z` | Deshacer (retrocede 5 movimientos) |
 | `R` | Reiniciar el nivel |
 
-También están los botones **Deshacer** y **Reiniciar nivel** en el HUD.
+También están los botones **Deshacer** y **Reiniciar** en pantalla. Al terminar el último nivel aparece la pantalla final: *volver a iniciar* vuelve al nivel 1 y borra los logros de la partida anterior.
+
+## Niveles
+
+Son 8. Los tres primeros recorren las mecánicas del enunciado, y del 4 al 7 cada uno exige un power-up distinto:
+
+| Nivel | Qué introduce |
+|---|---|
+| 1 | Tres cajas a tres destinos |
+| 2 | Caja llave, cerrojo, muro y caja frágil |
+| 3 | Hielo, cerrojo, muro y caja frágil |
+| 4 | **Fuerza**: dos cajas en fila que hay que empujar juntas |
+| 5 | **Antideslizante**: hay que frenar sobre el hielo para empujar |
+| 6 | **Fantasma**: la caja está en una sala cerrada |
+| 7 | **Manos de Acero**: una caja frágil reforzada (`H`) tapa el pasillo y hay que romperla |
+| 8 | Combinación: llave, muro, hielo y frágil |
+
+Los niveles 4 a 7 **no se pueden resolver sin su power-up**, y lo demuestra la batería de pruebas (ver abajo).
 
 ## Reglas implementadas
 
@@ -50,10 +67,12 @@ También están los botones **Deshacer** y **Reiniciar nivel** en el HUD.
 
 ## Pruebas
 
-Hay una batería de pruebas de humo que corre **sin interfaz gráfica**: resuelve los tres niveles, verifica las reglas de empuje, rotura, cerrojos y deslizamiento, y prueba el undo y los power-ups.
+Hay una batería de pruebas de humo que corre **sin interfaz gráfica**: verifica las reglas de empuje, rotura, cerrojos y deslizamiento, prueba el undo y los power-ups, y resuelve **cada nivel** con su secuencia de solución. Si se agrega un nivel sin cargar su solución en `PruebaSokoban.SOLUCIONES`, la batería falla.
+
+Para los niveles de power-up usa `test/Solucionador.java`, una búsqueda en anchura sobre el juego real: recorre todos los estados alcanzables y, sacándole al jugador los power-ups después de cada paso, comprueba que no exista ninguna solución sin ellos. No reimplementa reglas: cada paso lo resuelve `Juego.manejarEntrada()` y para volver atrás usa el propio `Memento`.
 
 ```bash
-javac -encoding UTF-8 -cp out -d out test/PruebaSokoban.java
+javac -encoding UTF-8 -cp out -d out test/Solucionador.java test/PruebaSokoban.java
 ```
 
 ```bash
@@ -92,7 +111,7 @@ Los niveles son archivos de texto en `niveles/nivelN.txt`, un carácter por casi
 | `M` / `m` | Muro cerrado / abierto |
 | `1` `2` `3` `4` | Power-up: Fuerza, Antideslizante, Fantasma, Manos de Acero |
 
-Para agregar un nivel alcanza con crear `niveles/nivel4.txt`: el juego lo detecta solo.
+Para agregar un nivel alcanza con crear `niveles/nivel9.txt`: el juego lo detecta solo. Después hay que sumar su solución a `PruebaSokoban.SOLUCIONES`; `Solucionador.resolver(juego, 9, false)` la calcula.
 
 ## Assets
 

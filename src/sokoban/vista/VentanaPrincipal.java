@@ -163,12 +163,18 @@ public class VentanaPrincipal extends JFrame implements Observador {
     /** Se completo el ultimo nivel: muestra la pantalla final con sus dos salidas. */
     private void mostrarFinal() {
         setGlassPane(panelFinal);
-        panelFinal.mostrar(
-                () -> {
-                    juego.iniciarJuego();
-                    panelTablero.requestFocusInWindow();
-                },
-                this::cerrarVentana);
+        panelFinal.mostrar(this::partidaNueva, this::cerrarVentana);
+    }
+
+    /**
+     * Partida nueva: vuelve al nivel 1 y borra los logros (GestorLogros.reiniciar,
+     * SOK-14). Lo resuelve la ventana porque es la duena de GestorLogros; Juego
+     * no conoce a los logros (decision 13 de la bitacora).
+     */
+    private void partidaNueva() {
+        gestorLogros.reiniciar();
+        juego.iniciarJuego();
+        panelTablero.requestFocusInWindow();
     }
 
     /** Cierra por el mismo camino que la X de la ventana, para respetar el DefaultCloseOperation. */

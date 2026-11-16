@@ -1,5 +1,7 @@
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 import sokoban.controlador.Juego;
 import sokoban.eventos.EventoJuego;
@@ -42,6 +44,28 @@ public class PruebaSokoban {
             "LUUURDLDRRRLLLUUUUURDDLDRRRRRRRRDRUULURURRRDDDDD";
     static final String SOLUCION_3 =
             "DDLDRRRLUULURRRRRLLLLULLURRRRRRRRRRRDLLLDDRRRRR";
+
+    /**
+     * Una secuencia que resuelve cada nivel (SOK-11). Un nivel nuevo sin su
+     * entrada aca hace fallar la bateria. Las de los niveles 4 a 8 las saco
+     * Solucionador (BFS), asi que son las mas cortas posibles.
+     */
+    static final Map<Integer, String> SOLUCIONES = Map.of(
+            1, SOLUCION_1,
+            2, SOLUCION_2,
+            3, SOLUCION_3,
+            4, "URRDRRRLLLULLDR",        // Fuerza
+            5, "RRLLLU",                 // Antideslizante
+            6, "DRURRRRR",               // Fantasma
+            7, "RRRRRDDLL",              // Manos de Acero
+            8, "URRDDRRRURDD");          // llave + muro + hielo + fragil
+
+    /** Niveles disenados para que no se puedan resolver sin su power-up. */
+    static final Map<Integer, TipoPowerUp> POWERUP_OBLIGATORIO = new TreeMap<>(Map.of(
+            4, TipoPowerUp.FUERZA,
+            5, TipoPowerUp.ANTIDESLIZANTE,
+            6, TipoPowerUp.FANTASMA,
+            7, TipoPowerUp.MANOS_DE_ACERO));
 
     static int fallas = 0;
 
@@ -121,7 +145,7 @@ public class PruebaSokoban {
                 juego.getTableroActual().cajaEn(6, 16) != null);
         check("la fragil bajo a resistencia 1 tras 2 empujes",
                 juego.getTableroActual().cajaEn(6, 16).getResistencia() == 1);
-        check("no hay nivel 4", !juego.siguienteNivel());
+        check("despues del 3 viene el nivel 4", juego.siguienteNivel() && juego.getNivelActual() == 4);
 
         // ---------- Deslizamiento en terreno resbaladizo ----------
         System.out.println("HIELO");
@@ -265,6 +289,42 @@ public class PruebaSokoban {
         Juego.reiniciarInstancia();
         check("Singleton: reiniciarInstancia permite arrancar una partida limpia",
                 Juego.getInstance() != anterior);
+
+        // ---------- SOK-14: partida nueva borra los logros ----------
+        System.out.println("PARTIDA NUEVA");
+        check("habia logros desbloqueados", !logros.logrosDesbloqueados().isEmpty());
+        logros.reiniciar();
+        check("GestorLogros.reiniciar() los borra todos", logros.logrosDesbloqueados().isEmpty());
+
+        // ---------- SOK-11: cada nivel tiene su solucion verificada ----------
+        // Partida limpia y sin observadores: el solucionador hace miles de
+        // movimientos y no tiene que ensuciar los logros ni el registro.
+        Juego.reiniciarInstancia();
+        Juego limpio = Juego.getInstance();
+        System.out.println("SOLVABILIDAD");
+        int nivel = 1;
+        while (limpio.existeNivel(nivel)) {
+            String solucion = SOLUCIONES.get(nivel);
+            check("nivel " + nivel + " tiene su solucion en SOLUCIONES", solucion != null);
+            if (solucion != null) {
+                limpio.cargarNivel(nivel);
+                mover(limpio, solucion);
+                check("nivel " + nivel + " se resuelve con su secuencia", limpio.estaCompletado());
+            }
+            nivel++;
+        }
+        check("el juego tiene 8 niveles", nivel - 1 == 8);
+
+        // ---------- SOK-06 a SOK-09: el power-up es obligatorio ----------
+        // El solucionador recorre TODOS los estados alcanzables sin power-ups:
+        // que devuelva null es la demostracion de que el nivel no sale sin el.
+        System.out.println("POWER-UPS OBLIGATORIOS");
+        for (Map.Entry<Integer, TipoPowerUp> e : POWERUP_OBLIGATORIO.entrySet()) {
+            check("nivel " + e.getKey() + " es irresoluble sin " + e.getValue().getNombre(),
+                    Solucionador.resolver(limpio, e.getKey(), true) == null);
+            check("nivel " + e.getKey() + " tiene solucion usando " + e.getValue().getNombre(),
+                    Solucionador.resolver(limpio, e.getKey(), false) != null);
+        }
 
         System.out.println();
         System.out.println(fallas == 0 ? "TODO OK" : (fallas + " FALLAS"));

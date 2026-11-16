@@ -1,5 +1,6 @@
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.Insets;
 import java.awt.KeyboardFocusManager;
 import java.awt.Point;
 import java.awt.Robot;
@@ -67,7 +68,45 @@ public class PruebaFoco {
         Thread.sleep(400);
     }
 
+    /** Cuantas veces hubo que traer la ventana al frente porque otra aplicacion tenia el foco. */
+    static int reactivaciones = 0;
+
+    /**
+     * Robot no le manda las teclas a nuestra ventana: las inyecta en Windows,
+     * que se las entrega a la ventana que este al frente. Si en ese momento el
+     * usuario esta usando otra aplicacion, las flechas van a parar ahi y la
+     * prueba falla aunque el juego ande bien.
+     *
+     * Por eso, antes de cada tecla, si la ventana no es la activa se la activa
+     * con un clic en la barra de titulo. No se clickea el tablero: eso le
+     * devolveria el foco al PanelTablero y esconderia justo el bug que esta
+     * prueba vigila (el foco que se queda en un boton).
+     */
+    static void asegurarVentanaActiva(Robot r) throws Exception {
+        for (int intento = 0; intento < 10 && !activa(); intento++) {
+            reactivaciones++;
+            SwingUtilities.invokeAndWait(() -> ventana.toFront());
+            Point p = ventana.getLocationOnScreen();
+            Insets bordes = ventana.getInsets();
+            r.mouseMove(p.x + ventana.getWidth() / 2, p.y + Math.max(4, bordes.top / 2));
+            r.mousePress(InputEvent.BUTTON1_DOWN_MASK);
+            r.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
+            Thread.sleep(300);
+        }
+        if (!activa()) {
+            throw new IllegalStateException("La ventana del juego no consiguio el foco de Windows:"
+                    + " otra aplicacion lo tiene. Volve a correr la prueba sin tocar nada.");
+        }
+    }
+
+    static boolean activa() throws Exception {
+        boolean[] activa = new boolean[1];
+        SwingUtilities.invokeAndWait(() -> activa[0] = ventana.isActive());
+        return activa[0];
+    }
+
     static void tecla(Robot r, int code) throws Exception {
+        asegurarVentanaActiva(r);
         r.keyPress(code);
         r.keyRelease(code);
         Thread.sleep(250);
@@ -108,6 +147,10 @@ public class PruebaFoco {
                 KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner())
                 .contains("PanelTablero"));
 
+        if (reactivaciones > 0) {
+            System.out.println("  (otra aplicacion tenia el foco: la ventana se trajo al frente "
+                    + reactivaciones + " vez/veces)");
+        }
         System.out.println();
         System.out.println(fallas == 0 ? "TODO OK" : fallas + " FALLAS");
         System.exit(fallas == 0 ? 0 : 1);
