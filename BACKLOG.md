@@ -220,17 +220,52 @@ Sigue pendiente de la Épica A: **SOK-04 (sonidos)**. La carpeta `assets/sonidos
 
 ---
 
-## Hecho el 15/11/2026: niveles, sonidos y deuda técnica
+## Hecho el 14/11/2026 — efectos de sonido
 
-- **SOK-12**: `G` (resistencia 5) y `H` (8) en el `.txt`. `FabricaCajaFragil` recibe la resistencia y `DirectorNivel` registra una fábrica por carácter (decisión 23 de la bitácora).
-- **SOK-06 a SOK-09**: niveles 4 (Fuerza), 5 (Antideslizante), 6 (Fantasma) y 7 (Manos de Acero). Cada uno es **irresoluble sin su power-up**, demostrado por la batería.
-- **SOK-10**: 8 niveles. El 8 combina llave, muro, hielo y frágil. Desvío del orden sugerido: la frágil y el hielo entran juntos en el nivel 3, que ya existía, en vez de en dos niveles separados.
-- **SOK-11**: `PruebaSokoban.SOLUCIONES` tiene una secuencia por nivel, y un nivel sin la suya hace fallar la batería. `test/Solucionador.java` (BFS sobre `Juego` + `Memento`) calcula las soluciones y prueba la irresolubilidad (decisión 25).
-- **SOK-04**: los 8 `.wav`, generados por síntesis con `herramientas/GeneradorSonidos.java`. Son obra propia, CC0. Detalle en `assets/CREDITS.txt`.
-- **SOK-14**: botón *Partida nueva* que usa `GestorLogros.reiniciar()` (decisión 24).
-- **SOK-15**: `Point` reemplazado por dos `int` en `Memento` (decisión 22). **Falta reflejarlo en el diagrama (SOK-19).**
-- **SOK-16**: al terminar el nivel 8 se muestra el puntaje total y los logros, con *Partida nueva* o *Cerrar*.
+**SOK-04 cerrado.** Los 8 efectos están en `assets/sonidos/`, de los packs **Impact Sounds** e **Interface Sounds** de Kenney, los dos **CC0**. Con esto, gráficos y audio vienen del mismo autor y bajo la misma licencia: una sola línea en el informe.
 
-Para SOK-19, además de lo listado ahí: `Memento` ahora tiene `filaJugador`/`columnaJugador` en vez de `posJugador: Point`, `FabricaCajaFragil` tiene un campo `resistencia`, y `PanelHUD` recibe un `Runnable` en el constructor.
+Los packs se distribuyen en `.ogg` y `javax.sound.sampled` no lee Vorbis, así que se convirtieron a WAV PCM 16 bits / 44100 Hz / mono con ffmpeg. El comando y la correspondencia archivo por archivo quedaron en `assets/CREDITS.txt`.
 
-**`PruebaFoco` era inestable, y se arregló la prueba, no el juego.** Fallaba de vez en cuando porque `Robot` no le manda las teclas a nuestra ventana: las inyecta en Windows, que se las entrega a la ventana que esté al frente. Si en ese momento el usuario estaba usando otra aplicación, las flechas iban a parar ahí. Se reprodujo a propósito, con otra ventana que le roba el foco al arrancar: falla 3 de 3. Ahora, antes de cada tecla, la prueba activa su ventana con un clic en la barra de título si hace falta, y lo informa. Con el foco robado pasa 3 de 3, y sin robo 5 de 5. Se eligió la barra de título y no el tablero porque clickear el tablero le devolvería el foco y escondería justo el bug que la prueba vigila. Para confirmarlo, con el bug de foco original reintroducido (`WHEN_FOCUSED` y botones enfocables) la prueba sigue fallando donde corresponde.
+Dos decisiones de ajuste: a `movimiento.wav` se le bajó el volumen a la mitad porque suena en cada paso, y para `nivel_completado.wav` se eligió el sonido más largo del pack (1,9 s) porque el primer candidato duraba 119 ms y para una victoria quedaba seco.
+
+**Prueba nueva: `test/PruebaSonidos.java`.** Abre los 8 archivos con `AudioSystem` e informa duración y formato. Existe por una trampa concreta: si alguien copia un `.ogg` a esa carpeta, el juego no se cae — ese evento queda mudo y nadie se entera hasta la demo. Esta prueba lo vuelve un error visible.
+
+Con esto la **Épica A queda cerrada** salvo SOK-05 (mostrar la resistencia de la caja frágil con el sprite en vez de un número), que es P1.
+
+---
+
+## Hecho el 15/11/2026 — pruebas reparadas tras el merge
+
+Al integrar la rama de los patrones, `PruebaSokoban` fallaba 10 checks y reventaba, y `PruebaFoco` no arrancaba. Se verificó extrayendo `origin/main` a una carpeta aparte: **ya estaban rotas en main**, el merge no las rompió. En los dos casos lo desactualizado era la prueba, no el juego.
+
+**`PruebaSokoban`.** Los niveles se rehicieron (ahora traen power-ups, cerrojos, muros y hielo) pero las secuencias de solución eran las de los niveles viejos. Se resolvieron los tres niveles nuevos y se verificó cada solución contra el motor real:
+
+| Nivel | Movimientos | Empujes | Qué ejercita |
+|---|---|---|---|
+| 1 | 62 | 29 | 3 cajas a 3 destinos |
+| 2 | 48 | 18 | caja llave → cerrojo → muro, frágil |
+| 3 | 47 | 23 | cerrojo, muro, deslizamiento en hielo, frágil |
+
+Las soluciones quedaron como constantes `SOLUCION_1/2/3` al principio del archivo, con la advertencia de que dependen de los `.txt` **a propósito**: su trabajo es garantizar que los niveles entregados son resolubles.
+
+**Pruebas de regla desacopladas de los niveles.** Las de caja frágil pasaron a construir su propio tablero de 3×5 con `DirectorNivel` + `TableroBuilder`. Vivían pegadas a un nivel, y las frágiles de los niveles nuevos quedaron detrás de un muro. Una prueba de regla no debería romperse porque alguien reacomodó un nivel.
+
+**`PruebaFoco`.** Buscaba un `JLabel` del HUD por su texto para leer los movimientos, y el HUD nuevo los dibuja con `drawString`. Ahora los lee del `Juego`, que es lo que la prueba realmente vigila: que la tecla llegue al controlador. Cómo la vista muestre el número es otro asunto. Los botones tampoco se buscan por texto —`BotonImagen` pinta su etiqueta y `getText()` viene vacío— sino pidiéndoselos al `PanelHUD` por su API pública.
+
+**Estado: 65 checks, todos en verde.**
+
+Nota: el compañero ya resolvió **SOK-12** por su cuenta — `F`, `G` y `H` declaran frágiles de resistencia 3, 5 y 8.
+
+---
+
+## Hecho el 16/11/2026: niveles con power-ups obligatorios y deuda técnica
+
+- **SOK-06 a SOK-09**: niveles 4 (Fuerza), 5 (Antideslizante), 6 (Fantasma) y 7 (Manos de Acero, con una frágil `H` que tapa el pasillo). Cada uno es **irresoluble sin su power-up**, y lo demuestra la batería.
+- **SOK-10**: 8 niveles; el 8 combina llave, muro, hielo y frágil. **Ojo con la dificultad:** los niveles 4 a 8 son chicos, pensados como demostración de cada power-up, y los 1 a 3 (rehechos en `main`) son más largos. La progresión no es creciente: conviene decidir si se reordenan o se agrandan.
+- **SOK-11**: `PruebaSokoban.SOLUCIONES` tiene una secuencia por nivel (las de los niveles 1 a 3 son las `SOLUCION_1/2/3` que ya estaban), y un nivel sin la suya hace fallar la batería. `test/Solucionador.java` hace una búsqueda en anchura sobre `Juego` y el `Memento` (decisión 25 de la bitácora) y prueba que los niveles 4 a 7 no salen sin su power-up.
+- **SOK-14**: la salida *Volver a iniciar* de la pantalla final ahora llama a `GestorLogros.reiniciar()` antes de volver al nivel 1. Antes, una partida nueva arrastraba los logros de la anterior y el método seguía muerto (decisión 24).
+- **SOK-15**: `Point` reemplazado por dos `int` en `Memento` (decisión 22). **Falta reflejarlo en el diagrama (SOK-19):** `-posJugador: Point` pasa a `-filaJugador: int` y `-columnaJugador: int`.
+- **`PruebaFoco` inestable:** fallaba de vez en cuando porque `Robot` no le manda las teclas a nuestra ventana, sino a la que esté al frente en Windows. Si el usuario estaba usando otra aplicación, las flechas iban a parar ahí. Se reprodujo a propósito con otra ventana que roba el foco al arrancar (falla 3 de 3). Ahora la prueba, antes de cada tecla, activa su ventana con un clic en la barra de título si hace falta. Se eligió la barra de título y no el tablero porque clickear el tablero le devolvería el foco y escondería el bug que la prueba vigila. Con el bug original reintroducido, la prueba sigue fallando donde corresponde.
+- **`INFORME.md`**: primer borrador del informe técnico (SOK-21). Lo pendiente está marcado con `[COMPLETAR]`.
+
+**Estado: `PruebaSokoban` con 91 checks, todos en verde.**

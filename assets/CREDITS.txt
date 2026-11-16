@@ -43,25 +43,32 @@ resultado se publica bajo la misma licencia.
 ASSETS SONOROS
 ==============
 
-Origen: obra propia del equipo, generada por sintesis con
-        herramientas/GeneradorSonidos.java (no se descargo ningun audio).
-Licencia: Creative Commons Zero (CC0 1.0) - dominio publico, igual que los
-          graficos.
+Origen: packs "Impact Sounds" e "Interface Sounds", por Kenney Vleugels
+        https://kenney.nl/assets/impact-sounds
+        https://kenney.nl/assets/interface-sounds
+Licencia: Creative Commons Zero (CC0 1.0) - dominio publico
 
-Cada sonido se calcula sumando ondas (seno y cuadrada suavizada) y ruido con
-envolventes. El ruido usa semilla fija, asi que correr el generador de nuevo
-produce exactamente los mismos archivos. Formato: WAV PCM 16 bits, mono,
-22050 Hz (javax.sound.sampled lo lee sin conversion).
+Los packs se distribuyen en .ogg y javax.sound.sampled solo lee WAV, AU y
+AIFF, asi que se convirtieron a WAV PCM 16 bits, 44100 Hz, mono, con ffmpeg:
 
-  movimiento.wav          golpecito grave, 45 ms, volumen bajo (suena en cada paso)
-  empuje.wav              arrastre: ruido filtrado + tono grave que cae, 140 ms
-  caja_rota.wav           crujido de ruido con chasquidos, 350 ms
-  cerrojo.wav             dos clics metalicos + tono ascendente, 450 ms
-  undo.wav                barrido descendente ("rebobinar"), 220 ms
-  powerup.wav             arpegio ascendente do-mi-sol-do, 390 ms
-  nivel_completado.wav    fanfarria en mayor que termina en acorde, 1,1 s
-  logro.wav               dos campanadas, 600 ms
+  ffmpeg -i ORIGEN.ogg -af "volume=V" -acodec pcm_s16le -ar 44100 -ac 1 DESTINO.wav
 
-Para regenerarlos, desde la raiz del proyecto:
-  javac -d out herramientas/GeneradorSonidos.java
-  java -cp out GeneradorSonidos
+Correspondencia:
+
+  movimiento.wav        <- ImpactSounds/footstep_wood_000.ogg      (volumen 0.5)
+  empuje.wav            <- ImpactSounds/impactWood_light_000.ogg   (volumen 0.8)
+  caja_rota.wav         <- ImpactSounds/impactGlass_heavy_000.ogg
+  cerrojo.wav           <- ImpactSounds/impactMetal_medium_000.ogg
+  undo.wav              <- InterfaceSounds/back_001.ogg
+  powerup.wav           <- InterfaceSounds/pluck_001.ogg
+  nivel_completado.wav  <- InterfaceSounds/select_006.ogg
+  logro.wav             <- InterfaceSounds/confirmation_002.ogg
+
+A movimiento.wav se le bajo el volumen porque suena en cada paso del jugador.
+
+
+FUENTE
+======
+
+"Press Start 2P" (assets/fuentes/PressStart2P-Regular.ttf), por CodeMan38.
+Licencia: SIL Open Font License 1.1 - https://openfontlicense.org

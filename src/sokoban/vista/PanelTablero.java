@@ -41,7 +41,8 @@ import sokoban.modelo.entidades.CajaLlave;
  */
 public class PanelTablero extends JPanel implements Observador {
 
-    private static final int LADO_CELDA = 64;
+    /** Lado de la celda en pixeles; se recalcula en cada pintado segun el espacio disponible. */
+    private int lado = 64;
     private static final String CARPETA_IMAGENES = "assets/imagenes/";
 
     private final Juego juego;
@@ -49,7 +50,8 @@ public class PanelTablero extends JPanel implements Observador {
 
     public PanelTablero(Juego juego) {
         this.juego = juego;
-        setBackground(new Color(28, 28, 34));
+        // Transparente: el marco del fondo se ve alrededor del tablero.
+        setOpaque(false);
         setFocusable(true);
     }
 
@@ -62,9 +64,9 @@ public class PanelTablero extends JPanel implements Observador {
     public Dimension getPreferredSize() {
         Tablero tablero = juego.getTableroActual();
         if (tablero == null) {
-            return new Dimension(640, 480);
+            return new Dimension(640, 360);
         }
-        return new Dimension(tablero.getColumnas() * LADO_CELDA, tablero.getFilas() * LADO_CELDA);
+        return new Dimension(tablero.getColumnas() * 64, tablero.getFilas() * 64);
     }
 
     @Override
@@ -74,8 +76,16 @@ public class PanelTablero extends JPanel implements Observador {
         if (tablero == null) {
             return;
         }
-        Graphics2D g2 = (Graphics2D) g;
+        Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        // Pixel art: escalar sin suavizar para que los sprites no se vean borrosos.
+        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
+                RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+
+        // La celda se adapta al hueco del marco y el tablero queda centrado.
+        lado = Math.max(1, Math.min(getWidth() / tablero.getColumnas(), getHeight() / tablero.getFilas()));
+        g2.translate((getWidth() - lado * tablero.getColumnas()) / 2,
+                (getHeight() - lado * tablero.getFilas()) / 2);
 
         for (int f = 0; f < tablero.getFilas(); f++) {
             for (int c = 0; c < tablero.getColumnas(); c++) {
@@ -88,11 +98,12 @@ public class PanelTablero extends JPanel implements Observador {
             }
         }
         dibujarJugador(g2, tablero);
+        g2.dispose();
     }
 
     private void dibujarCelda(Graphics2D g2, Celda celda, int fila, int columna) {
-        int x = columna * LADO_CELDA;
-        int y = fila * LADO_CELDA;
+        int x = columna * lado;
+        int y = fila * lado;
 
         // El cerrojo y los power-ups son marcas que van encima del piso, no
         // pisos en si: se dibuja primero la base y despues la marca, que tiene
@@ -108,42 +119,42 @@ public class PanelTablero extends JPanel implements Observador {
 
         if (celda instanceof Pared) {
             g2.setColor(new Color(90, 78, 68));
-            g2.fillRect(x, y, LADO_CELDA, LADO_CELDA);
+            g2.fillRect(x, y, lado, lado);
             g2.setColor(new Color(70, 60, 52));
-            g2.drawRect(x, y, LADO_CELDA - 1, LADO_CELDA - 1);
+            g2.drawRect(x, y, lado - 1, lado - 1);
         } else if (celda instanceof Muro) {
             boolean abierto = ((Muro) celda).estaAbierto();
             g2.setColor(abierto ? new Color(60, 60, 70) : new Color(150, 60, 60));
-            g2.fillRect(x, y, LADO_CELDA, LADO_CELDA);
+            g2.fillRect(x, y, lado, lado);
             g2.setColor(new Color(220, 200, 120));
-            g2.drawRect(x + 6, y + 6, LADO_CELDA - 13, LADO_CELDA - 13);
+            g2.drawRect(x + 6, y + 6, lado - 13, lado - 13);
         } else if (celda instanceof CasillaDestino) {
             pisoBase(g2, x, y);
             g2.setColor(new Color(230, 180, 60));
-            g2.drawOval(x + 12, y + 12, LADO_CELDA - 24, LADO_CELDA - 24);
+            g2.drawOval(x + 12, y + 12, lado - 24, lado - 24);
         } else if (celda instanceof TerrenoResbaladizo) {
             g2.setColor(new Color(120, 190, 220));
-            g2.fillRect(x, y, LADO_CELDA, LADO_CELDA);
+            g2.fillRect(x, y, lado, lado);
             g2.setColor(new Color(200, 235, 245));
-            g2.drawLine(x + 8, y + 12, x + LADO_CELDA - 8, y + 20);
-            g2.drawLine(x + 8, y + 28, x + LADO_CELDA - 8, y + 36);
+            g2.drawLine(x + 8, y + 12, x + lado - 8, y + 20);
+            g2.drawLine(x + 8, y + 28, x + lado - 8, y + 36);
         } else if (celda instanceof CasillaCerrojo) {
             pisoBase(g2, x, y);
             CasillaCerrojo cerrojo = (CasillaCerrojo) celda;
             g2.setColor(cerrojo.estaActivado() ? new Color(110, 200, 130) : new Color(200, 170, 80));
-            g2.fillRoundRect(x + 10, y + 10, LADO_CELDA - 20, LADO_CELDA - 20, 8, 8);
+            g2.fillRoundRect(x + 10, y + 10, lado - 20, lado - 20, 8, 8);
             g2.setColor(new Color(40, 40, 45));
-            g2.drawString("C", x + LADO_CELDA / 2 - 4, y + LADO_CELDA / 2 + 5);
+            g2.drawString("C", x + lado / 2 - 4, y + lado / 2 + 5);
         } else if (celda instanceof CasillaPowerUp) {
             pisoBase(g2, x, y);
             CasillaPowerUp casilla = (CasillaPowerUp) celda;
             if (!casilla.estaRecogido()) {
                 g2.setColor(new Color(140, 110, 220));
-                g2.fillOval(x + 10, y + 10, LADO_CELDA - 20, LADO_CELDA - 20);
+                g2.fillOval(x + 10, y + 10, lado - 20, lado - 20);
                 g2.setColor(Color.WHITE);
                 g2.setFont(g2.getFont().deriveFont(Font.BOLD, 14f));
                 g2.drawString(String.valueOf(casilla.getTipo().getNombre().charAt(0)),
-                        x + LADO_CELDA / 2 - 5, y + LADO_CELDA / 2 + 5);
+                        x + lado / 2 - 5, y + lado / 2 + 5);
             }
         } else {
             pisoBase(g2, x, y);
@@ -152,14 +163,14 @@ public class PanelTablero extends JPanel implements Observador {
 
     private void pisoBase(Graphics2D g2, int x, int y) {
         g2.setColor(new Color(48, 48, 56));
-        g2.fillRect(x, y, LADO_CELDA, LADO_CELDA);
+        g2.fillRect(x, y, lado, lado);
         g2.setColor(new Color(40, 40, 48));
-        g2.drawRect(x, y, LADO_CELDA - 1, LADO_CELDA - 1);
+        g2.drawRect(x, y, lado - 1, lado - 1);
     }
 
     private void dibujarCaja(Graphics2D g2, Tablero tablero, Caja caja) {
-        int x = caja.getColumna() * LADO_CELDA;
-        int y = caja.getFila() * LADO_CELDA;
+        int x = caja.getColumna() * lado;
+        int y = caja.getFila() * lado;
         boolean enDestino =
                 tablero.obtenerCelda(caja.getFila(), caja.getColumna()) instanceof CasillaDestino;
 
@@ -183,16 +194,16 @@ public class PanelTablero extends JPanel implements Observador {
             color = color.brighter();
         }
         g2.setColor(color);
-        g2.fillRoundRect(x + 5, y + 5, LADO_CELDA - 10, LADO_CELDA - 10, 8, 8);
+        g2.fillRoundRect(x + 5, y + 5, lado - 10, lado - 10, 8, 8);
         g2.setColor(color.darker().darker());
-        g2.drawRoundRect(x + 5, y + 5, LADO_CELDA - 11, LADO_CELDA - 11, 8, 8);
-        g2.drawLine(x + 5, y + 5, x + LADO_CELDA - 6, y + LADO_CELDA - 6);
-        g2.drawLine(x + LADO_CELDA - 6, y + 5, x + 5, y + LADO_CELDA - 6);
+        g2.drawRoundRect(x + 5, y + 5, lado - 11, lado - 11, 8, 8);
+        g2.drawLine(x + 5, y + 5, x + lado - 6, y + lado - 6);
+        g2.drawLine(x + lado - 6, y + 5, x + 5, y + lado - 6);
 
         if (caja.getResistencia() > 0) {
             g2.setColor(Color.WHITE);
             g2.setFont(g2.getFont().deriveFont(Font.BOLD, 12f));
-            g2.drawString(String.valueOf(caja.getResistencia()), x + LADO_CELDA - 16, y + 18);
+            g2.drawString(String.valueOf(caja.getResistencia()), x + lado - 16, y + 18);
         }
     }
 
@@ -200,15 +211,15 @@ public class PanelTablero extends JPanel implements Observador {
         if (juego.getJugador() == null) {
             return;
         }
-        int x = juego.getJugador().getColumna() * LADO_CELDA;
-        int y = juego.getJugador().getFila() * LADO_CELDA;
+        int x = juego.getJugador().getColumna() * lado;
+        int y = juego.getJugador().getFila() * lado;
         if (dibujarImagen(g2, "jugador", x, y)) {
             return;
         }
         g2.setColor(new Color(90, 180, 230));
-        g2.fillOval(x + 10, y + 8, LADO_CELDA - 20, LADO_CELDA - 20);
+        g2.fillOval(x + 10, y + 8, lado - 20, lado - 20);
         g2.setColor(new Color(40, 90, 130));
-        g2.fillRect(x + 16, y + LADO_CELDA - 20, LADO_CELDA - 32, 12);
+        g2.fillRect(x + 16, y + lado - 20, lado - 32, 12);
     }
 
     /** Devuelve true si habia una imagen para esa clave y se dibujo. */
@@ -217,7 +228,7 @@ public class PanelTablero extends JPanel implements Observador {
         if (imagen == null) {
             return false;
         }
-        g2.drawImage(imagen, x, y, LADO_CELDA, LADO_CELDA, null);
+        g2.drawImage(imagen, x, y, lado, lado, null);
         return true;
     }
 

@@ -6,9 +6,9 @@ import sokoban.modelo.entidades.CajaFragil;
 /**
  * Creador concreto del Factory Method: fabrica CajaFragil.
  *
- * Cada instancia de la fabrica sabe con que resistencia arranca la caja, asi
- * DirectorNivel registra una fabrica por caracter ('F', 'G', 'H') sin que
- * CajaFragil ni el tablero sepan nada del formato del .txt (SOK-12).
+ * La resistencia inicial es un parametro de la fabrica, no de la caja que se
+ * pide: asi el director registra una instancia por cada resistencia que el
+ * formato de nivel declare, sin tocar CajaFragil ni Tablero.
  */
 public class FabricaCajaFragil implements FabricaCaja {
 
@@ -20,7 +20,7 @@ public class FabricaCajaFragil implements FabricaCaja {
 
     public FabricaCajaFragil(int resistencia) {
         if (resistencia <= 0) {
-            throw new IllegalArgumentException("La resistencia tiene que ser positiva");
+            throw new IllegalArgumentException("La resistencia debe ser positiva: " + resistencia);
         }
         this.resistencia = resistencia;
     }

@@ -30,17 +30,17 @@ Hay que ejecutar **desde la raíz del proyecto**, porque los niveles se leen de 
 | `Z` | Deshacer (retrocede 5 movimientos) |
 | `R` | Reiniciar el nivel |
 
-También están los botones **Deshacer**, **Reiniciar nivel** y **Partida nueva** en el HUD. *Partida nueva* vuelve al nivel 1 y borra los logros y el puntaje acumulado. Al terminar el último nivel se muestra el puntaje total y los logros, con la opción de empezar de nuevo o cerrar.
+También están los botones **Deshacer** y **Reiniciar** en pantalla. Al terminar el último nivel aparece la pantalla final: *volver a iniciar* vuelve al nivel 1 y borra los logros de la partida anterior.
 
 ## Niveles
 
-Son 8, y cada uno presenta una mecánica nueva:
+Son 8. Los tres primeros recorren las mecánicas del enunciado, y del 4 al 7 cada uno exige un power-up distinto:
 
 | Nivel | Qué introduce |
 |---|---|
-| 1 | Empujar cajas |
-| 2 | Caja llave, cerrojo y muro |
-| 3 | Caja frágil y terreno resbaladizo |
+| 1 | Tres cajas a tres destinos |
+| 2 | Caja llave, cerrojo, muro y caja frágil |
+| 3 | Hielo, cerrojo, muro y caja frágil |
 | 4 | **Fuerza**: dos cajas en fila que hay que empujar juntas |
 | 5 | **Antideslizante**: hay que frenar sobre el hielo para empujar |
 | 6 | **Fantasma**: la caja está en una sala cerrada |
@@ -104,9 +104,7 @@ Los niveles son archivos de texto en `niveles/nivelN.txt`, un carácter por casi
 | `+` | Jugador sobre destino |
 | `$` | Caja normal |
 | `*` | Caja normal sobre destino |
-| `F` | Caja frágil (resistencia 3) |
-| `G` | Caja frágil reforzada (resistencia 5) |
-| `H` | Caja frágil dura (resistencia 8) |
+| `F` / `G` / `H` | Caja frágil de resistencia 3 / 5 / 8 |
 | `L` | Caja llave |
 | `~` | Terreno resbaladizo |
 | `c` | Casillero cerrojo |
@@ -121,7 +119,9 @@ Los gráficos son del pack **[Sokoban de Kenney](https://kenney.nl/assets/sokoba
 
 El tile de terreno resbaladizo es obra derivada: el pack no trae hielo, así que se generó virando a azul el piso gris de Kenney. CC0 permite la modificación.
 
-Los **sonidos** son obra propia, generados por síntesis con [herramientas/GeneradorSonidos.java](herramientas/GeneradorSonidos.java), y se publican también como CC0. No se descargó ningún audio. El detalle de cada uno está en `CREDITS.txt`. Si falta un `.wav`, ese evento simplemente no suena.
+Los efectos de sonido son de los packs **[Impact Sounds](https://kenney.nl/assets/impact-sounds)** e **[Interface Sounds](https://kenney.nl/assets/interface-sounds)**, del mismo autor y también **CC0**. Están en `assets/sonidos/`.
+
+Los packs vienen en `.ogg` y `javax.sound.sampled` solo lee **WAV, AU y AIFF**, así que se convirtieron a WAV PCM 16 bits con ffmpeg. El comando exacto está en `CREDITS.txt`. Si agregás un sonido nuevo, convertilo: un `.ogg` en esa carpeta no rompe nada, pero ese evento queda mudo sin avisar.
 
 ## Documentación de diseño
 

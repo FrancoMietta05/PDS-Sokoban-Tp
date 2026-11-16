@@ -59,7 +59,7 @@ En bash, el compilado es `javac -encoding UTF-8 -d out $(find src -name "*.java"
 | `Z` | Deshacer (retrocede 5 movimientos) |
 | `R` | Reiniciar el nivel |
 
-El HUD tiene además los botones **Deshacer**, **Reiniciar nivel** y **Partida nueva**.
+En pantalla están además los botones **Deshacer** y **Reiniciar**.
 
 ## 3. Reglas y funcionalidades
 
@@ -72,7 +72,7 @@ El HUD tiene además los botones **Deshacer**, **Reiniciar nivel** y **Partida n
 - **Terreno resbaladizo:** lo que entra sigue deslizándose en la misma dirección hasta chocar o salir del hielo. Vale para las cajas y para el jugador.
 - **Muros:** solo se pueden atravesar cuando están abiertos.
 - **Deshacer:** se recuerdan los últimos 15 movimientos, cada uso retrocede 5 y se permiten hasta 3 usos consecutivos.
-- **Victoria:** cuando todas las casillas destino están ocupadas. Al completar un nivel se muestra un resumen con movimientos, empujes, usos de deshacer y puntaje. Al terminar el último nivel se muestra el puntaje total y los logros, con la opción de empezar de nuevo o cerrar.
+- **Victoria:** cuando todas las casillas destino están ocupadas. Al completar un nivel se muestra un resumen con movimientos, empujes, usos de deshacer y puntaje. Al terminar el último nivel aparece una pantalla final para volver a iniciar (desde el nivel 1, con los logros en cero) o cerrar.
 
 **Puntaje.** Criterio del equipo: se parte de 1000 y se descuentan 5 puntos por movimiento, 10 por empuje y 100 por uso de deshacer, sin bajar de cero. Los empujes pesan más que los movimientos porque son la jugada que hay que planificar, y el deshacer pesa más todavía porque es la ayuda.
 
@@ -170,7 +170,7 @@ La consecuencia práctica es que toda la batería de pruebas del modelo corre si
 **D, inversión de dependencias.**
 - `Juego` y `Tablero` dependen de `IJugador`, no de `Jugador`. A `Jugador` no le entra ninguna dependencia (decisión 2).
 - La vista depende de la abstracción `Observador` para enterarse de los cambios.
-- `PanelHUD` recibe la acción de "Partida nueva" como un `Runnable` en vez de depender de `GestorLogros` (decisión 24).
+- `PanelFinal` recibe lo que tiene que hacer cada botón como un `Runnable`: no conoce ni al juego ni a `GestorLogros` (decisión 24).
 
 ## 7. Patrones GRASP
 
@@ -209,18 +209,18 @@ Resumen de las decisiones registradas en la bitácora. Cada una está desarrolla
 | 19–21 | Singleton, Factory Method y Builder | Ver sección 5 |
 | 22 | Dos `int` en lugar de `java.awt.Point` | Modelo libre de AWT |
 | 23 | La resistencia viaja en la fábrica | Sumar una dureza es una línea |
-| 24 | "Partida nueva" la resuelve la vista | `Juego` no conoce a `GestorLogros` |
+| 24 | La partida nueva la resuelve la vista | `Juego` no conoce a `GestorLogros` |
 | 25 | Solucionador sobre el juego real | Probar los niveles con las reglas verdaderas, no con una copia |
 
 ## 9. Niveles
 
-Ocho niveles en `niveles/nivelN.txt`, un carácter por casilla. Cada uno presenta una mecánica nueva:
+Ocho niveles en `niveles/nivelN.txt`, un carácter por casilla. Los tres primeros recorren las mecánicas del enunciado, y del 4 al 7 cada uno exige un power-up distinto:
 
 | Nivel | Qué introduce |
 |---|---|
-| 1 | Empujar cajas |
-| 2 | Caja llave, cerrojo y muro |
-| 3 | Caja frágil y terreno resbaladizo |
+| 1 | Tres cajas a tres destinos |
+| 2 | Caja llave, cerrojo, muro y caja frágil |
+| 3 | Hielo, cerrojo, muro y caja frágil |
 | 4 | Fuerza: dos cajas en fila que hay que empujar juntas |
 | 5 | Antideslizante: hay que frenar sobre el hielo para empujar |
 | 6 | Fantasma: la caja está en una sala cerrada |
@@ -260,7 +260,6 @@ Pendiente: confirmar con el profesor si acepta draw.io o exige StarUML (SOK-18),
 - `Tablero.moverJugador()` devuelve `ResultadoMovimiento`, y `Tablero` expone `setJugador()`.
 - `PowerUpDecorator` suma `consumirTurno()` y `capturarEstado()`.
 - `FabricaCajaFragil` tiene el atributo `resistencia`.
-- El constructor de `PanelHUD` recibe un `Runnable`.
 
 ## 12. Capturas del juego
 
@@ -274,7 +273,9 @@ Todos los assets son de dominio público, como pide el enunciado. El detalle arc
 |---|---|---|
 | 18 sprites (`assets/imagenes/`) | Pack *Sokoban* de Kenney, https://kenney.nl/assets/sokoban | CC0 1.0 |
 | `resbaladizo.png` | Obra derivada: el piso de Kenney virado a azul | CC0 1.0 (permitido por la licencia original) |
-| 8 efectos de sonido (`assets/sonidos/`) | Generados por síntesis con `herramientas/GeneradorSonidos.java`; no se descargó ningún audio | CC0 1.0 (obra propia del equipo) |
+| 8 efectos de sonido (`assets/sonidos/`) | Packs *Impact Sounds* e *Interface Sounds* de Kenney, convertidos de `.ogg` a WAV | CC0 1.0 |
+| Fuente *Press Start 2P* (`assets/fuentes/`) | CodeMan38 | SIL Open Font License 1.1 |
+| `Fondo.jpg`, `Final.png`, `Template resumen de nivel.png` | [COMPLETAR: origen y licencia; no figuran en `CREDITS.txt`] | [COMPLETAR] |
 
 ## 14. Declaración de uso de herramientas de IA
 

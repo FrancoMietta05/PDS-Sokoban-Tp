@@ -261,13 +261,13 @@ Formato de cada entrada: qué se decidió, qué se descartó, y el problema conc
 
 ---
 
-### 24. "Partida nueva" la resuelve la vista, no `Juego` (SOK-14)
+### 24. La partida nueva la resuelve la vista, no `Juego` (SOK-14)
 
-**DECISIÓN.** El botón *Partida nueva* llama a `VentanaPrincipal.partidaNueva()`, que hace `gestorLogros.reiniciar()` y `juego.iniciarJuego()`. `PanelHUD` recibe esa acción como un `Runnable`.
+**DECISIÓN.** La salida *Volver a iniciar* de la pantalla final (`PanelFinal`) llama a `VentanaPrincipal.partidaNueva()`, que hace `gestorLogros.reiniciar()` y `juego.iniciarJuego()`. `PanelFinal` recibe esa acción como un `Runnable` y no sabe qué hace.
 
 **ALTERNATIVA DESCARTADA.** Un `Juego.partidaNueva()` que reinicie los logros, o un evento `PARTIDA_NUEVA`.
 
-**POR QUÉ.** `Juego` no conoce a `GestorLogros` (decisión 13), y no tiene por qué empezar a conocerlo. Quien crea y posee al gestor de logros es la ventana, así que es la que sabe borrarlo. Un evento nuevo también funcionaría, pero solo tendría un suscriptor y sería indirección sin beneficio. El HUD recibe un `Runnable` para no depender de `GestorLogros` él tampoco.
+**POR QUÉ.** `Juego` no conoce a `GestorLogros` (decisión 13), y no tiene por qué empezar a conocerlo. Quien crea y posee al gestor de logros es la ventana, así que es la que sabe borrarlo. Un evento nuevo también funcionaría, pero solo tendría un suscriptor y sería indirección sin beneficio. `PanelFinal` recibe un `Runnable` y así tampoco depende de `GestorLogros`.
 
 ---
 
