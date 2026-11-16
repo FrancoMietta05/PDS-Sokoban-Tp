@@ -122,7 +122,9 @@ public class PruebaFoco {
         Thread.sleep(1000);
         Robot r = new Robot();
 
-        tecla(r, KeyEvent.VK_LEFT);
+        // En el nivel 1 el jugador arranca con una pared a la izquierda y el
+        // pasillo hacia la derecha: por eso las teclas van casi todas a la derecha.
+        tecla(r, KeyEvent.VK_RIGHT);
         check("se mueve con el teclado al arrancar", juego.getMovimientos() == 1);
 
         PanelHUD hud = buscarHud(ventana);
@@ -130,15 +132,15 @@ public class PruebaFoco {
         JButton reiniciar = hud.getBotonReiniciar();
         clic(r, reiniciar);
         check("reiniciar puso los movimientos en cero", juego.getMovimientos() == 0);
-        tecla(r, KeyEvent.VK_LEFT);
+        tecla(r, KeyEvent.VK_RIGHT);
         check("SE MUEVE DESPUES DE REINICIAR", juego.getMovimientos() == 1);
 
-        tecla(r, KeyEvent.VK_UP);
         tecla(r, KeyEvent.VK_RIGHT);
+        tecla(r, KeyEvent.VK_LEFT);
         int antes = juego.getMovimientos();
         JButton undo = hud.getBotonDeshacer();
         clic(r, undo);
-        tecla(r, KeyEvent.VK_LEFT);
+        tecla(r, KeyEvent.VK_RIGHT);
         check("SE MUEVE DESPUES DE DESHACER", juego.getMovimientos() != antes);
 
         check("los botones del HUD no roban el foco",
