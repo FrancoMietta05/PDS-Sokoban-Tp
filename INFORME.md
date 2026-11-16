@@ -214,20 +214,20 @@ Resumen de las decisiones registradas en la bitácora. Cada una está desarrolla
 
 ## 9. Niveles
 
-Ocho niveles en `niveles/nivelN.txt`, un carácter por casilla. Los tres primeros recorren las mecánicas del enunciado, y del 4 al 7 cada uno exige un power-up distinto:
+Ocho niveles en `niveles/nivelN.txt`, un carácter por casilla. Van de menor a mayor dificultad. Del 1 al 4 cada uno exige un power-up distinto y son cortos, para aprender una mecánica por vez; del 5 al 8 son más largos y combinan las mecánicas del enunciado:
 
 | Nivel | Qué introduce |
 |---|---|
-| 1 | Tres cajas a tres destinos |
-| 2 | Caja llave, cerrojo, muro y caja frágil |
-| 3 | Hielo, cerrojo, muro y caja frágil |
+| 1 | Manos de Acero: una frágil dura tapa el pasillo y hay que romperla |
+| 2 | Fantasma: la caja está en una sala cerrada |
+| 3 | Antideslizante: hay que frenar sobre el hielo para empujar |
 | 4 | Fuerza: dos cajas en fila que hay que empujar juntas |
-| 5 | Antideslizante: hay que frenar sobre el hielo para empujar |
-| 6 | Fantasma: la caja está en una sala cerrada |
-| 7 | Manos de Acero: una frágil dura tapa el pasillo y hay que romperla |
+| 5 | Tres cajas a tres destinos |
+| 6 | Caja llave, cerrojo, muro y caja frágil |
+| 7 | Hielo, cerrojo, muro y caja frágil |
 | 8 | Combinación: llave, muro, hielo y frágil |
 
-Los niveles 4 a 7 están diseñados para que **no se puedan resolver sin su power-up**, y la batería de pruebas lo demuestra (sección 10). Así las dos funcionalidades adicionales se pueden mostrar jugando.
+Los niveles 1 a 4 están diseñados para que **no se puedan resolver sin su power-up**, y la batería de pruebas lo demuestra (sección 10). Así las dos funcionalidades adicionales se pueden mostrar jugando.
 
 ## 10. Pruebas
 
@@ -240,7 +240,7 @@ Los niveles 4 a 7 están diseñados para que **no se puedan resolver sin su powe
 - Las resistencias `F`, `G` y `H`, y el reinicio de logros.
 - **Cada nivel con su secuencia de solución.** Si se agrega un nivel sin su solución, la batería falla.
 
-**`Solucionador`**: una búsqueda en anchura que avanza con `Juego.manejarEntrada()` y vuelve atrás con el propio `Memento` del juego, así que no reimplementa ninguna regla. Recorriendo todos los estados alcanzables y sacándole al jugador los power-ups después de cada paso, prueba que los niveles 4 a 7 no tienen ninguna solución sin ellos (decisión 25).
+**`Solucionador`**: una búsqueda en anchura que avanza con `Juego.manejarEntrada()` y vuelve atrás con el propio `Memento` del juego, así que no reimplementa ninguna regla. Recorriendo todos los estados alcanzables y sacándole al jugador los power-ups después de cada paso, prueba que los niveles 1 a 4 no tienen ninguna solución sin ellos (decisión 25).
 
 **`PruebaFoco`**: necesita pantalla. Usa `Robot` para hacer clic en los botones del HUD y después mover con las flechas. Es la regresión del bug por el que el teclado dejaba de responder al tocar un botón: la entrada se leía con un `KeyListener` y el foco se iba al botón. Se arregló con key bindings `WHEN_IN_FOCUSED_WINDOW` y botones no enfocables.
 
@@ -263,7 +263,7 @@ Pendiente: confirmar con el profesor si acepta draw.io o exige StarUML (SOK-18),
 
 ## 12. Capturas del juego
 
-[COMPLETAR: una captura por mecánica. Sugeridas: nivel 2 con el muro abierto, nivel 3 con la caja deslizándose, un nivel con un power-up activo en el HUD, el resumen de nivel, una notificación de logro y la pantalla de fin.]
+[COMPLETAR: una captura por mecánica. Sugeridas: nivel 6 con el muro abierto, nivel 7 con la caja deslizándose, un nivel con un power-up activo en el HUD, el resumen de nivel, una notificación de logro y la pantalla de fin.]
 
 ## 13. Assets y licencias
 

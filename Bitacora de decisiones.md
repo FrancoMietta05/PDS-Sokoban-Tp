@@ -273,7 +273,7 @@ Formato de cada entrada: qué se decidió, qué se descartó, y el problema conc
 
 ### 25. Los niveles se prueban con un solucionador sobre el juego real (SOK-11)
 
-**DECISIÓN.** `test/Solucionador.java` hace una búsqueda en anchura usando `Juego.manejarEntrada()` para avanzar y `Juego.restaurar(Memento)` para volver atrás. Con él se demuestra que los niveles 4 a 7 no tienen solución sin su power-up: el solucionador recorre todos los estados alcanzables y, después de cada paso, le saca al jugador la cadena de decoradores.
+**DECISIÓN.** `test/Solucionador.java` hace una búsqueda en anchura usando `Juego.manejarEntrada()` para avanzar y `Juego.restaurar(Memento)` para volver atrás. Con él se demuestra que los niveles 1 a 4 no tienen solución sin su power-up: el solucionador recorre todos los estados alcanzables y, después de cada paso, le saca al jugador la cadena de decoradores.
 
 **ALTERNATIVA DESCARTADA.** Un solucionador con sus propias reglas de movimiento, o confiar en que "a ojo" el nivel no sale sin el power-up.
 

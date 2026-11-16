@@ -38,34 +38,34 @@ public class PruebaSokoban {
      * su trabajo es garantizar que los niveles que se entregan son resolubles.
      * Un nivel irresoluble descubierto durante la demo es el peor escenario.
      */
-    static final String SOLUCION_1 =
+    static final String SOLUCION_5 =
             "UUULDLDRRRRRRRRRDRUDLLLLLLLLDRRRRRRRURDLLLLDDLULURRRRRRURDDRDL";
-    static final String SOLUCION_2 =
+    static final String SOLUCION_6 =
             "LUUURDLDRRRLLLUUUUURDDLDRRRRRRRRDRUULURURRRDDDDD";
-    static final String SOLUCION_3 =
+    static final String SOLUCION_7 =
             "DDLDRRRLUULURRRRRLLLLULLURRRRRRRRRRRDLLLDDRRRRR";
 
     /**
      * Una secuencia que resuelve cada nivel (SOK-11). Un nivel nuevo sin su
-     * entrada aca hace fallar la bateria. Las de los niveles 4 a 8 las saco
+     * entrada aca hace fallar la bateria. Las de los niveles 1 a 4 y 8 las saco
      * Solucionador (BFS), asi que son las mas cortas posibles.
      */
     static final Map<Integer, String> SOLUCIONES = Map.of(
-            1, SOLUCION_1,
-            2, SOLUCION_2,
-            3, SOLUCION_3,
+            1, "RRRRRDDLL",              // Manos de Acero
+            2, "DRURRRRR",               // Fantasma
+            3, "RRLLLU",                 // Antideslizante
             4, "URRDRRRLLLULLDR",        // Fuerza
-            5, "RRLLLU",                 // Antideslizante
-            6, "DRURRRRR",               // Fantasma
-            7, "RRRRRDDLL",              // Manos de Acero
+            5, SOLUCION_5,
+            6, SOLUCION_6,
+            7, SOLUCION_7,
             8, "URRDDRRRURDD");          // llave + muro + hielo + fragil
 
     /** Niveles disenados para que no se puedan resolver sin su power-up. */
     static final Map<Integer, TipoPowerUp> POWERUP_OBLIGATORIO = new TreeMap<>(Map.of(
-            4, TipoPowerUp.FUERZA,
-            5, TipoPowerUp.ANTIDESLIZANTE,
-            6, TipoPowerUp.FANTASMA,
-            7, TipoPowerUp.MANOS_DE_ACERO));
+            1, TipoPowerUp.MANOS_DE_ACERO,
+            2, TipoPowerUp.FANTASMA,
+            3, TipoPowerUp.ANTIDESLIZANTE,
+            4, TipoPowerUp.FUERZA));
 
     static int fallas = 0;
 
@@ -99,72 +99,80 @@ public class PruebaSokoban {
         });
 
 
-        // ---------- NIVEL 1: tres cajas, tres destinos ----------
+        // ---------- NIVEL 1: el primero de la partida ----------
         System.out.println("NIVEL 1");
         juego.iniciarJuego();
         check("nivel 1 cargado", juego.getNivelActual() == 1);
         check("no hay victoria al arrancar", !juego.verificarVictoria());
-        check("el nivel 1 tiene 3 cajas y 3 destinos",
-                juego.getTableroActual().getCajas().size() == 3
-                        && juego.getTableroActual().getDestinos().size() == 3);
-        mover(juego, SOLUCION_1);
+        mover(juego, SOLUCIONES.get(1));
         check("nivel 1 resuelto", juego.estaCompletado());
-        check("movimientos = 62", juego.getMovimientos() == 62);
-        check("empujes = 29", juego.getEmpujes() == 29);
-        check("puntaje > 0", juego.calcularPuntaje() > 0);
         check("se emitio NIVEL_COMPLETADO", registro.contains(TipoEvento.NIVEL_COMPLETADO));
         check("logro Primer paso desbloqueado",
                 logros.logrosDesbloqueados().stream().anyMatch(l -> l.getNombre().equals("Primer paso")));
+        check("despues del 1 viene el nivel 2", juego.siguienteNivel() && juego.getNivelActual() == 2);
+
+        // ---------- NIVEL 5: tres cajas, tres destinos ----------
+        System.out.println("NIVEL 5");
+        juego.cargarNivel(5);
+        check("nivel 5 cargado", juego.getNivelActual() == 5);
+        check("el nivel 5 tiene 3 cajas y 3 destinos",
+                juego.getTableroActual().getCajas().size() == 3
+                        && juego.getTableroActual().getDestinos().size() == 3);
+        mover(juego, SOLUCION_5);
+        check("nivel 5 resuelto", juego.estaCompletado());
+        check("movimientos = 62", juego.getMovimientos() == 62);
+        check("empujes = 29", juego.getEmpujes() == 29);
+        check("puntaje > 0", juego.calcularPuntaje() > 0);
         check("logro Pulso firme desbloqueado",
                 logros.logrosDesbloqueados().stream().anyMatch(l -> l.getNombre().equals("Pulso firme")));
 
-        // ---------- NIVEL 2: caja llave, cerrojo y muro ----------
-        System.out.println("NIVEL 2");
-        check("avanza al nivel 2", juego.siguienteNivel());
-        check("nivel 2 cargado", juego.getNivelActual() == 2);
+        // ---------- NIVEL 6: caja llave, cerrojo y muro ----------
+        System.out.println("NIVEL 6");
+        check("avanza al nivel 6", juego.siguienteNivel());
+        check("nivel 6 cargado", juego.getNivelActual() == 6);
         check("el muro (4,8) arranca cerrado",
                 !juego.getTableroActual().obtenerCelda(4, 8).esTransitable());
-        mover(juego, SOLUCION_2);
+        mover(juego, SOLUCION_6);
         check("se abrio el cerrojo", registro.contains(TipoEvento.CERROJO_ABIERTO));
         check("el muro quedo transitable",
                 juego.getTableroActual().obtenerCelda(4, 8).esTransitable());
         check("logro Cerrajero desbloqueado",
                 logros.logrosDesbloqueados().stream().anyMatch(l -> l.getNombre().equals("Cerrajero")));
-        check("nivel 2 resuelto", juego.estaCompletado());
+        check("nivel 6 resuelto", juego.estaCompletado());
 
-        // ---------- NIVEL 3: hielo, cerrojo, muro y caja fragil ----------
-        System.out.println("NIVEL 3");
-        check("avanza al nivel 3", juego.siguienteNivel());
+        // ---------- NIVEL 7: hielo, cerrojo, muro y caja fragil ----------
+        System.out.println("NIVEL 7");
+        check("avanza al nivel 7", juego.siguienteNivel());
         check("el muro (6,13) arranca cerrado",
                 !juego.getTableroActual().obtenerCelda(6, 13).esTransitable());
-        mover(juego, SOLUCION_3);
-        check("nivel 3 resuelto", juego.estaCompletado());
+        mover(juego, SOLUCION_7);
+        check("nivel 7 resuelto", juego.estaCompletado());
         check("el muro se abrio con la caja llave",
                 juego.getTableroActual().obtenerCelda(6, 13).esTransitable());
         check("la fragil llego al destino sin romperse",
                 juego.getTableroActual().cajaEn(6, 16) != null);
         check("la fragil bajo a resistencia 1 tras 2 empujes",
                 juego.getTableroActual().cajaEn(6, 16).getResistencia() == 1);
-        check("despues del 3 viene el nivel 4", juego.siguienteNivel() && juego.getNivelActual() == 4);
+        check("despues del 7 viene el nivel 8", juego.siguienteNivel() && juego.getNivelActual() == 8);
 
         // ---------- Deslizamiento en terreno resbaladizo ----------
         System.out.println("HIELO");
-        juego.cargarNivel(3);
-        mover(juego, SOLUCION_3.substring(0, 17));
+        juego.cargarNivel(7);
+        mover(juego, SOLUCION_7.substring(0, 17));
         check("la caja empujada al hielo se deslizo sola hasta (4,13)",
                 juego.getTableroActual().cajaEn(4, 13) != null);
         check("y freno al salir del hielo, no antes",
                 juego.getTableroActual().cajaEn(4, 12) == null);
 
-        juego.cargarNivel(3);
-        mover(juego, SOLUCION_3.substring(0, 41));
+        juego.cargarNivel(7);
+        mover(juego, SOLUCION_7.substring(0, 41));
         check("el jugador tambien resbala: bajo de (4,10) a (5,10)",
                 juego.getJugador().getFila() == 5 && juego.getJugador().getColumna() == 10);
 
         // ---------- Deshacer ----------
         System.out.println("UNDO");
-        juego.cargarNivel(1);
-        mover(juego, SOLUCION_1.substring(0, 15));
+        juego.cargarNivel(5);
+        mover(juego, SOLUCION_5.substring(0, 15));
         check("se hicieron 15 movimientos", juego.getMovimientos() == 15);
         check("hay historial para deshacer", juego.puedeDeshacer());
         check("undo 1", juego.deshacerMovimiento());
@@ -179,7 +187,7 @@ public class PruebaSokoban {
 
         // ---------- Power-ups (Decorator) ----------
         System.out.println("POWER-UPS");
-        juego.cargarNivel(3);
+        juego.cargarNivel(7);
         check("jugador crudo empuja 1 caja", juego.getJugador().cajasEmpujables() == 1);
         juego.aplicarPowerUp(TipoPowerUp.FUERZA);
         check("con Fuerza empuja 2", juego.getJugador().cajasEmpujables() == 2);
@@ -191,15 +199,15 @@ public class PruebaSokoban {
         juego.aplicarPowerUp(TipoPowerUp.MANOS_DE_ACERO);
         check("rompe fragiles", juego.getJugador().rompeFragiles());
 
-        // el nivel 3 tiene el ANTIDESLIZANTE en (4,5): se recoge al pisarlo
-        juego.cargarNivel(3);
+        // el nivel 7 tiene el ANTIDESLIZANTE en (4,5): se recoge al pisarlo
+        juego.cargarNivel(7);
         mover(juego, "RR");
         check("recogio el power-up del nivel",
                 registro.contains(TipoEvento.POWERUP_RECOGIDO));
         check("quedo con Antideslizante activo", juego.getJugador().resisteDeslizamiento());
 
         // expiracion: Fuerza dura 15 movimientos
-        juego.cargarNivel(3);
+        juego.cargarNivel(7);
         juego.aplicarPowerUp(TipoPowerUp.FUERZA);
         for (int i = 0; i < 16; i++) {
             mover(juego, i % 2 == 0 ? "U" : "D");
@@ -232,7 +240,7 @@ public class PruebaSokoban {
 
         // ---------- undo con power-ups (pendiente 1 de la bitacora) ----------
         System.out.println("UNDO CON POWER-UPS");
-        juego.cargarNivel(3);
+        juego.cargarNivel(7);
         mover(juego, "RRUDUD");        // agarra el ANTIDESLIZANTE en el 2do movimiento
         check("tiene el power-up antes del undo", juego.getJugador().resisteDeslizamiento());
         juego.deshacerMovimiento();    // retrocede 5: cae antes de haberlo agarrado

@@ -260,12 +260,12 @@ Nota: el compañero ya resolvió **SOK-12** por su cuenta — `F`, `G` y `H` dec
 
 ## Hecho el 16/11/2026: niveles con power-ups obligatorios y deuda técnica
 
-- **SOK-06 a SOK-09**: niveles 4 (Fuerza), 5 (Antideslizante), 6 (Fantasma) y 7 (Manos de Acero, con una frágil `H` que tapa el pasillo). Cada uno es **irresoluble sin su power-up**, y lo demuestra la batería.
-- **SOK-10**: 8 niveles; el 8 combina llave, muro, hielo y frágil. **Ojo con la dificultad:** los niveles 4 a 8 son chicos, pensados como demostración de cada power-up, y los 1 a 3 (rehechos en `main`) son más largos. La progresión no es creciente: conviene decidir si se reordenan o se agrandan.
-- **SOK-11**: `PruebaSokoban.SOLUCIONES` tiene una secuencia por nivel (las de los niveles 1 a 3 son las `SOLUCION_1/2/3` que ya estaban), y un nivel sin la suya hace fallar la batería. `test/Solucionador.java` hace una búsqueda en anchura sobre `Juego` y el `Memento` (decisión 25 de la bitácora) y prueba que los niveles 4 a 7 no salen sin su power-up.
+- **SOK-06 a SOK-09**: niveles con Fuerza, Antideslizante, Fantasma y Manos de Acero (este con una frágil `H` que tapa el pasillo). Cada uno es **irresoluble sin su power-up**, y lo demuestra la batería.
+- **SOK-10**: 8 niveles; el 8 combina llave, muro, hielo y frágil. **Orden por dificultad:** los niveles de power-up son chicos, pensados como demostración, y los tres de `main` son más largos. Se reordenaron de menor a mayor: 1 Manos de Acero, 2 Fantasma, 3 Antideslizante, 4 Fuerza, 5 tres cajas, 6 llave y cerrojo, 7 hielo y 8 combinación.
+- **SOK-11**: `PruebaSokoban.SOLUCIONES` tiene una secuencia por nivel (las de los niveles 5 a 7 son las soluciones que ya estaban, ahora `SOLUCION_5/6/7`), y un nivel sin la suya hace fallar la batería. `test/Solucionador.java` hace una búsqueda en anchura sobre `Juego` y el `Memento` (decisión 25 de la bitácora) y prueba que los niveles 1 a 4 no salen sin su power-up.
 - **SOK-14**: la salida *Volver a iniciar* de la pantalla final ahora llama a `GestorLogros.reiniciar()` antes de volver al nivel 1. Antes, una partida nueva arrastraba los logros de la anterior y el método seguía muerto (decisión 24).
 - **SOK-15**: `Point` reemplazado por dos `int` en `Memento` (decisión 22). **Falta reflejarlo en el diagrama (SOK-19):** `-posJugador: Point` pasa a `-filaJugador: int` y `-columnaJugador: int`.
 - **`PruebaFoco` inestable:** fallaba de vez en cuando porque `Robot` no le manda las teclas a nuestra ventana, sino a la que esté al frente en Windows. Si el usuario estaba usando otra aplicación, las flechas iban a parar ahí. Se reprodujo a propósito con otra ventana que roba el foco al arrancar (falla 3 de 3). Ahora la prueba, antes de cada tecla, activa su ventana con un clic en la barra de título si hace falta. Se eligió la barra de título y no el tablero porque clickear el tablero le devolvería el foco y escondería el bug que la prueba vigila. Con el bug original reintroducido, la prueba sigue fallando donde corresponde.
 - **`INFORME.md`**: primer borrador del informe técnico (SOK-21). Lo pendiente está marcado con `[COMPLETAR]`.
 
-**Estado: `PruebaSokoban` con 91 checks, todos en verde.**
+**Estado: `PruebaSokoban` con 94 checks, todos en verde.**
