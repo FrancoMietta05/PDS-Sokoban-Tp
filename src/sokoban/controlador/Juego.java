@@ -48,6 +48,7 @@ public class Juego {
 
     private static Juego instancia;
 
+ 
     private final GestorEventos gestorEventos;
     private final GestorPowerUps gestorPowerUps;
     private final HistorialMovimientos historial = new HistorialMovimientos();
@@ -261,11 +262,20 @@ public class Juego {
      * mas todavia porque es la ayuda. Nunca baja de cero.
      */
     public int calcularPuntaje() {
-        int puntaje = 1000
-                - getMovimientos() * 5
-                - getEmpujes() * 10
-                - usosUndo * 100;
-        return Math.max(0, puntaje);
+    	int puntaje;
+    	if(nivelActual<5) {
+    		 puntaje = 500 ;              
+    	}
+    	else {
+	        puntaje = 1000;
+	                
+    	}
+    	puntaje=puntaje
+    	- getMovimientos() * 5
+        - getEmpujes() * 10
+        - usosUndo * 100;
+    	return Math.max(0, puntaje);
+    	
     }
 
     // ==================================================================
