@@ -34,20 +34,20 @@ También están los botones **Deshacer** y **Reiniciar** en pantalla. Al termina
 
 ## Niveles
 
-Son 8. Los tres primeros recorren las mecánicas del enunciado, y del 4 al 7 cada uno exige un power-up distinto:
+Son 8. Van de menor a mayor dificultad. Del 1 al 4 cada uno exige un power-up distinto y son cortos, para aprender una mecánica por vez; del 5 al 8 son más largos y combinan las mecánicas del enunciado:
 
 | Nivel | Qué introduce |
 |---|---|
-| 1 | Tres cajas a tres destinos |
-| 2 | Caja llave, cerrojo, muro y caja frágil |
-| 3 | Hielo, cerrojo, muro y caja frágil |
+| 1 | **Manos de Acero**: una caja frágil reforzada (`H`) tapa el pasillo y hay que romperla |
+| 2 | **Fantasma**: la caja está en una sala cerrada |
+| 3 | **Antideslizante**: hay que frenar sobre el hielo para empujar |
 | 4 | **Fuerza**: dos cajas en fila que hay que empujar juntas |
-| 5 | **Antideslizante**: hay que frenar sobre el hielo para empujar |
-| 6 | **Fantasma**: la caja está en una sala cerrada |
-| 7 | **Manos de Acero**: una caja frágil reforzada (`H`) tapa el pasillo y hay que romperla |
+| 5 | Tres cajas a tres destinos |
+| 6 | Caja llave, cerrojo, muro y caja frágil |
+| 7 | Hielo, cerrojo, muro y caja frágil |
 | 8 | Combinación: llave, muro, hielo y frágil |
 
-Los niveles 4 a 7 **no se pueden resolver sin su power-up**, y lo demuestra la batería de pruebas (ver abajo).
+Los niveles 1 a 4 **no se pueden resolver sin su power-up**, y lo demuestra la batería de pruebas (ver abajo).
 
 ## Reglas implementadas
 
